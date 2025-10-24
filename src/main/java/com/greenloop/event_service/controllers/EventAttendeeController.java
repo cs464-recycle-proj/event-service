@@ -38,6 +38,11 @@ public class EventAttendeeController {
         return attendeeService.getEventAttendee(eventId, userId);
     }
 
+    @PatchMapping("/{id}/users/{userId}")
+    public EventAttendee markAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
+        return attendeeService.markedAttendee(eventId, userId);
+    }
+
     @DeleteMapping("/{id}/users/{userId}")
     public void deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
         attendeeService.deregisterAttendee(eventId, userId);

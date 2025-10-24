@@ -1,6 +1,9 @@
 package com.greenloop.event_service.services;
 
 import com.greenloop.event_service.dtos.RegisterRequest;
+import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
+import com.greenloop.event_service.exceptions.EventFullException;
+import com.greenloop.event_service.exceptions.EventNotFoundException;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
@@ -8,6 +11,9 @@ import com.greenloop.event_service.repos.EventRepository;
 
 import java.util.*;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class EventAttendeeService {
 
     private final EventRepository eventRepo;
@@ -17,29 +23,51 @@ public class EventAttendeeService {
         this.eventRepo = eventRepo;
         this.attendeeRepo = attendeeRepo;
     }
-    
-    // ----- event user management -----
-    public EventAttendee registerAttendee(UUID id, RegisterRequest request) {
-        Event event = eventRepo.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
 
-        EventAttendee newAttendee = new EventAttendee(request); 
+    // ----- event user management -----
+
+    // register attendee to event
+    public EventAttendee registerAttendee(UUID eventId, RegisterRequest request) {
+        Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+
+        if (event.getAttendeeCount() >= event.getCapacity()) {
+            throw new EventFullException(event.getId());
+        }
+
+        EventAttendee newAttendee = new EventAttendee(request);
         event.addAttendeeToEvent(newAttendee);
 
         return newAttendee;
     }
 
-    public List<EventAttendee> getAllEventAttendees(UUID id) {
-        Event event = eventRepo.findById(id).orElseThrow(() -> new RuntimeException("Event not found"));
+    // get all attendees of event
+    public List<EventAttendee> getAllEventAttendees(UUID eventId) {
+        Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
         return event.getAttendees();
     }
 
-    public EventAttendee getEventAttendee(UUID id, UUID userId) {
-        return attendeeRepo.findByUserIdAndEventId(userId, id).orElseThrow(() -> new RuntimeException("Attendee for this event is not found"));
+    // get an attendee of event
+    public EventAttendee getEventAttendee(UUID eventId, UUID userId) {
+        return attendeeRepo.findByUserIdAndEventId(userId, eventId)
+        .orElseThrow(() -> new AttendeeNotFoundException(eventId));
     }
 
-    public void deregisterAttendee(UUID id, UUID userId) {
-        // need to check if event will update
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, id).orElseThrow(() -> new RuntimeException("Attendee for this event is not found"));
+    // mark attendee attendance
+    public EventAttendee markedAttendee(UUID eventId, UUID userId) {
+        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
+        .orElseThrow(() -> new AttendeeNotFoundException(eventId));
+
+        attendee.setAttended(true);
+        return attendeeRepo.save(attendee);
+    }
+
+    // deregister attendee from event
+    public void deregisterAttendee(UUID eventId, UUID userId) {
+        // TODO need to check if event will update
+        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
+                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
+
+            
         attendeeRepo.delete(attendee);
     }
 }

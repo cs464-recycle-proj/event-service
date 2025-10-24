@@ -20,12 +20,12 @@ public class EventController {
 
     // ----- event CRUD -----
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/")
+    @PostMapping
     public Event createEvent(@RequestBody Event event) {
         return eventService.createEvent(event);
     }
 
-    @GetMapping("/")
+    @GetMapping
     public List<Event> getAllEvents() {
         return eventService.getAllEvents();
     }

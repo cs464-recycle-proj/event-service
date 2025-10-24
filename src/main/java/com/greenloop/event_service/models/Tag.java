@@ -15,6 +15,9 @@ public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    
+    @Column(nullable=false, unique=true)
+    private String tagName; // eg. recycling, 
 
     @ManyToMany
     @JoinTable(name = "event_tags", 
@@ -23,5 +26,10 @@ public class Tag {
                 uniqueConstraints = @UniqueConstraint(columnNames = {"tag_id", "event_id" }))
     @JsonIgnore
     private List<Event> events = new ArrayList<>();
+
+    /* ====== CONSTRUCTORS ====== */
+    public Tag(String tagName) {
+        this.tagName = tagName;
+    }
 
 }

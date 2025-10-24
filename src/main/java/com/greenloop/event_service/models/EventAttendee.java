@@ -5,13 +5,15 @@ import lombok.*;
 
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.greenloop.event_service.dtos.RegisterRequest;
 
 @Entity
-@Getter
-@Setter
+@NoArgsConstructor
+@Data
 @Table(name = "event_attendees")
 public class EventAttendee {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -19,13 +21,15 @@ public class EventAttendee {
     private UUID userId;
     private String username;
     private String userEmail;
+    private boolean attended; 
 
     @ManyToOne
     @JoinColumn(name="event_id", nullable=false)
+    @JsonIgnore
     private Event event;
 
 
-    // Constructors
+    /* ======== CONSTRUCTORS ======== */
     public EventAttendee(RegisterRequest request) {
         this.userId = request.getUserId();
         this.username = request.getUsername();
