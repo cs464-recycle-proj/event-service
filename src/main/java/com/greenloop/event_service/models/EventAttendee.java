@@ -32,6 +32,8 @@ public class EventAttendee {
     @Column(nullable = false, updatable = false)
     private LocalDateTime registeredAt;
 
+    private java.time.LocalDateTime attendedAt;
+
     @ManyToOne
     @JoinColumn(name = "event_id", nullable = false)
     @JsonIgnore

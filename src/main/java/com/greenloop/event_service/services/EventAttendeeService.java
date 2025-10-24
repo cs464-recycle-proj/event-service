@@ -1,9 +1,13 @@
 package com.greenloop.event_service.services;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.greenloop.event_service.dtos.RegisterRequest;
 import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
 import com.greenloop.event_service.exceptions.EventFullException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
+import com.greenloop.event_service.dtos.ScanRequest;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
@@ -13,9 +17,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.springframework.stereotype.Service;
-
 @Service
+@Transactional
 public class EventAttendeeService {
 
     private final EventRepository eventRepo;
@@ -116,12 +119,34 @@ public class EventAttendeeService {
         return upcomingEvents;
     }
 
-    // deregister attendee from event
-    public void deregisterAttendee(UUID eventId, UUID userId) {
-        // TODO need to check if event will update
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
-
+    public void deregisterAttendee(UUID id, UUID userId) {
+        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, id).orElseThrow(() -> new RuntimeException("Attendee for this event is not found"));
         attendeeRepo.delete(attendee);
+    }
+
+    /**
+     * Mark attendance using a QR token. If attendee doesn't exist, create a registration entry.
+     */
+    public EventAttendee markAttendanceByToken(ScanRequest req) {
+        Event event = eventRepo.findByQrToken(req.getQrToken()).orElseThrow(() -> new RuntimeException("Event not found for provided QR token"));
+
+        UUID userId = req.getUserId();
+        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, event.getId()).orElse(null);
+        if (attendee == null) {
+            // create a new attendee record
+            RegisterRequest r = new RegisterRequest();
+            r.setUserId(req.getUserId());
+            // r.setUsername(req.getUsername());
+            r.setUserEmail(req.getUserEmail());
+            EventAttendee newAtt = new EventAttendee(r);
+            newAtt.setEvent(event);
+            attendee = attendeeRepo.save(newAtt);
+            event.addAttendeeToEvent(attendee);
+            eventRepo.save(event);
+        }
+
+        attendee.setAttended(true);
+        attendee.setAttendedAt(LocalDateTime.now());
+        return attendeeRepo.save(attendee);
     }
 }

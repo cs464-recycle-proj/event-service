@@ -18,9 +18,8 @@ public interface EventRepository extends JpaRepository<Event, UUID>{
     @Query("SELECT e FROM Event e JOIN EventAttendee a ON e.id = a.event.id WHERE a.userId = :userId")
     List<Event> findAllEventsByAttendeeId(@Param("userId") UUID userId);
 
-
     List<Event> findByStatus(EventStatus status);
-
     
+	Optional<Event> findByQrToken(String qrToken);
 }
 

@@ -40,6 +40,13 @@ public class Event {
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
+    // QR token used to identify the event when scanned. Generated on create if missing.
+    @Column(unique = true)
+    private String qrToken;
+
+    private LocalDateTime qrGeneratedAt;
+    
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<EventAttendee> attendees = new ArrayList<>();
 
     @OneToMany(mappedBy = "events")

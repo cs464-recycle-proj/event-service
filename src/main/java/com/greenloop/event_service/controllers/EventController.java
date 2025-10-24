@@ -36,6 +36,12 @@ public class EventController {
         return eventService.getEventById(id);
     }
 
+    @GetMapping(value = "/{id}/qr", produces = "image/png")
+    public @ResponseBody byte[] getEventQr(@PathVariable UUID id) {
+        // default size 300x300
+        return eventService.getQrCodeImage(id, 300, 300);
+    }
+
     @PutMapping("/{id}")
     public Event updateEvent(@PathVariable UUID id, @Valid @RequestBody Event event) {
         return eventService.updateEvent(id, event);
