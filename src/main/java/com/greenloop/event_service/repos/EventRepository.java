@@ -5,6 +5,6 @@ import com.greenloop.event_service.models.Event;
 import java.util.*;
 
 public interface EventRepository extends JpaRepository<Event, UUID>{
-    
+	Optional<Event> findByQrToken(String qrToken);
 }
 

@@ -20,6 +20,11 @@ public class EventAttendee {
     private String username;
     private String userEmail;
 
+    // whether attendee was present (marked by QR scan)
+    private boolean attended = false;
+
+    private java.time.LocalDateTime attendedAt;
+
     @ManyToOne
     @JoinColumn(name="event_id", nullable=false)
     private Event event;

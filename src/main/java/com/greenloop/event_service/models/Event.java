@@ -31,6 +31,12 @@ public class Event {
     private LocalDateTime regStartDT;
     private LocalDateTime regEndDT;
 
+    // QR token used to identify the event when scanned. Generated on create if missing.
+    @Column(unique = true)
+    private String qrToken;
+
+    private LocalDateTime qrGeneratedAt;
+
     @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "organizer_id", referencedColumnName = "id")
     private EventOrganzier organzier;
