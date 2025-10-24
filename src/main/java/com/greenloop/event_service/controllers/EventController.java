@@ -8,6 +8,8 @@ import java.util.*;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.services.EventService;
 
+import jakarta.validation.Valid;
+
 
 @RestController
 @RequestMapping("/events")
@@ -36,7 +38,7 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public Event updateEvent(@PathVariable UUID id, @RequestBody Event event) {
+    public Event updateEvent(@PathVariable UUID id, @Valid @RequestBody Event event) {
         return eventService.updateEvent(id, event);
     }
 

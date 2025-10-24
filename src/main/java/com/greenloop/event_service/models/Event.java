@@ -23,30 +23,47 @@ public class Event {
 
     private String name;
     private String description;
+    @JsonProperty("category")
     private EventType type;
     private EventStatus status;
 
     private String location;
+    private String imageUrl;
     private String organizer;
-    
+
     private int capacity;
-    private int points_reward;
+    private int coins;
     private int views_count;
 
     private LocalDateTime startDT;
     private LocalDateTime endDT;
     private LocalDateTime regStartDT;
     private LocalDateTime regEndDT;
-    
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<EventAttendee> attendees = new ArrayList<>();
 
     @OneToMany(mappedBy = "events")
-    @JsonIgnore
+    @JsonProperty("attendees")
     private List<Tag> tags = new ArrayList<>();
 
-    
+    /* ======== CONSTRUCTORS ======== */
+    public Event(String name, String description, EventType type, LocalDateTime startDT, LocalDateTime endDT,
+            String location, int capacity, int coins, String imageUrl, String organizer) {
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.location = location;
+        this.imageUrl = imageUrl;
+        this.organizer = organizer;
+        this.capacity = capacity;
+        this.coins = coins;
+        this.startDT = startDT;
+        this.endDT = endDT;
+        this.status = EventStatus.CREATED;
+    }
+
     /* ======== METHODS ======== */
     @JsonProperty("tags")
     public List<String> getTagNames() {
@@ -84,6 +101,4 @@ public class Event {
         return attendees.size();
     }
 
-
-    
 }

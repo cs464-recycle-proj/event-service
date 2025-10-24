@@ -9,6 +9,5 @@ import lombok.Setter;
 @Setter
 public class RegisterRequest {
     private UUID userId;
-    private String username;
     private String userEmail;
 }

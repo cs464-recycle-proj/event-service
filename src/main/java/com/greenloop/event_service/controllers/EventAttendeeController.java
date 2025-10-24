@@ -1,12 +1,7 @@
 package com.greenloop.event_service.controllers;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 import com.greenloop.event_service.dtos.RegisterRequest;
+import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.services.EventAttendeeService;
 
@@ -22,28 +17,48 @@ public class EventAttendeeController {
         this.attendeeService = attendeeService;
     }
 
-    // ----- event user management -----
+    // register for event
     @PostMapping("/register")
     public EventAttendee registerAttendee(@PathVariable UUID eventId, @RequestBody RegisterRequest request) {
         return attendeeService.registerAttendee(eventId, request);
     }
-
-    @GetMapping("/{id}/users")
+    // get all event attendees
+    @GetMapping("/{id}/participants")
     public List<EventAttendee> getAllEventAttendees(@PathVariable UUID eventId) {
         return attendeeService.getAllEventAttendees(eventId);
     }
-
-    @GetMapping("/{id}/users/{userId}")
+    // get one event attendee
+    @GetMapping("/{id}/participants/{userId}")
     public EventAttendee getEventAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
         return attendeeService.getEventAttendee(eventId, userId);
     }
-
-    @PatchMapping("/{id}/users/{userId}")
-    public EventAttendee markAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
+    // mark attendances of attendee
+    @PostMapping("/{id}/attendance")
+    public boolean markAttendee(@PathVariable UUID eventId, @RequestHeader UUID userId) {
         return attendeeService.markedAttendee(eventId, userId);
     }
-
-    @DeleteMapping("/{id}/users/{userId}")
+    // check attendance of attendee
+    @GetMapping("/{id}/is-registered")
+    public boolean isRegistered(@PathVariable UUID eventId, @RequestHeader UUID userId) {
+        return attendeeService.isUserRegistered(eventId, userId);
+    }
+    // get upcoming events for user
+    @GetMapping("/upcoming-for-user")
+    public List<Event> upcomingEventsForUser(@RequestHeader UUID userId) {
+        return attendeeService.upcomingEventForUser(userId);
+    }
+    // get upcoming events for unjoined user
+    @GetMapping("/upcoming")
+    public List<Event> upcomingNotJoinedEvents(@RequestHeader UUID userId) {
+        return attendeeService.upcomingNotJoinedEvents(userId);
+    }
+    // get past events for user
+    @GetMapping("/past")
+    public List<Event> pastEventsForUser(@PathVariable UUID eventId, @RequestHeader UUID userId) {
+        return attendeeService.pastEventsForUser(userId);
+    }
+    // remove attendee from event
+    @DeleteMapping("/{id}/participants/{userId}")
     public void deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
         attendeeService.deregisterAttendee(eventId, userId);
     }

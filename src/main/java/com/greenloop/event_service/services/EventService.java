@@ -52,7 +52,7 @@ public class EventService {
         existingEvent.setEndDT(event.getEndDT());
         existingEvent.setLocation(event.getLocation());
         existingEvent.setCapacity(event.getCapacity());
-        existingEvent.setPoints_reward(event.getPoints_reward());
+        existingEvent.setCoins(event.getCoins());
         existingEvent.setRegStartDT(event.getRegStartDT());
         existingEvent.setRegEndDT(event.getRegEndDT());
         return eventRepo.save(existingEvent);

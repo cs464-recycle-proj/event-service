@@ -7,4 +7,5 @@ import java.util.*;
 public interface EventAttendeeRepository extends JpaRepository<EventAttendee, UUID>{
     
     Optional<EventAttendee> findByUserIdAndEventId(UUID userId, UUID eventId);
+    Optional<EventAttendee> findByUserId(UUID userId);
 }
