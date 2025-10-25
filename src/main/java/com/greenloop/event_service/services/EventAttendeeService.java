@@ -9,9 +9,7 @@ import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
 import com.greenloop.event_service.repos.EventRepository;
 
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -25,8 +23,6 @@ public class EventAttendeeService {
         this.eventRepo = eventRepo;
         this.attendeeRepo = attendeeRepo;
     }
-
-    // ----- event user management -----
 
     // register attendee to event
     public EventAttendee registerAttendee(UUID eventId, RegisterRequest request) {
@@ -73,49 +69,7 @@ public class EventAttendeeService {
         return event.getAttendees().contains(attendee);
     }
 
-    // get upcoming events for user
-    public List<Event> upcomingEventForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
-        LocalDateTime now = LocalDateTime.now();
-
-        return events.stream()
-                .filter(e -> e.getStartDT().isAfter(now)) // upcoming only
-                .collect(Collectors.toList());
-    }
-
-    // get past events for user
-    public List<Event> pastEventsForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
-        LocalDateTime now = LocalDateTime.now();
-
-        return events.stream()
-                .filter(e -> e.getEndDT().isBefore(now)) // past only
-                .collect(Collectors.toList());
-    }
-
-    // get upcoming events that user can join
-    public List<Event> upcomingNotJoinedEvents(UUID userId) {
-        LocalDateTime now = LocalDateTime.now();
-
-        // get all upcoming events (not closed)
-        List<Event> upcomingEvents = eventRepo.findAll().stream()
-                .filter(e -> e.getEndDT().isAfter(now)) // only events not ended
-                .filter(e -> e.getAttendeeCount() < e.getCapacity()) // only events with available slots
-                .filter(e -> e.getAttendees().stream()
-                        .noneMatch(a -> a.getUserId().equals(userId))) // exclude events the user has joined
-                .collect(Collectors.toList());
-
-        return upcomingEvents;
-    }
-
+   
     // deregister attendee from event
     public void deregisterAttendee(UUID eventId, UUID userId) {
         // TODO need to check if event will update

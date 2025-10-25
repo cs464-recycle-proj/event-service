@@ -17,6 +17,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/events")
 public class EventController {
 
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> checkHealth() {
+        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
+        return ResponseEntity.ok(response);
+    }
+
     private final EventService eventService;
     public EventController(EventService eventService) {
         this.eventService = eventService;
@@ -48,10 +54,20 @@ public class EventController {
         eventService.deleteEvent(id);
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> checkHealth() {
-        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
-        return ResponseEntity.ok(response);
+    // get upcoming events for user
+    @GetMapping("/upcoming/joined")
+    public List<Event> upcomingEventsForUser(@RequestHeader UUID userId) {
+        return eventService.upcomingEventForUser(userId);
+    }
+    // get upcoming events for unjoined user
+    @GetMapping("/upcoming/unjoined")
+    public List<Event> upcomingNotJoinedEvents(@RequestHeader UUID userId) {
+        return eventService.upcomingNotJoinedEvents(userId);
+    }
+    // get past events for user
+    @GetMapping("/past")
+    public List<Event> pastEventsForUser(@PathVariable UUID eventId, @RequestHeader UUID userId) {
+        return eventService.pastEventsForUser(userId);
     }
 
 }
