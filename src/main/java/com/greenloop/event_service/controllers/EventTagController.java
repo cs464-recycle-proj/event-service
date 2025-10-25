@@ -16,7 +16,7 @@ import java.util.*;
 
 
 @RestController
-@RequestMapping
+@RequestMapping("/api/events")
 public class EventTagController {
 
     private final EventTagService tagService;
@@ -29,18 +29,17 @@ public class EventTagController {
         return tagService.getAllTags();
     }
     
-
-    @GetMapping("/events/{eventId}/tags")
+    @GetMapping("/{eventId}/tags")
     public List<Tag> getTagByEventId(@PathVariable UUID eventId) {
         return tagService.getAllTagsByEventId(eventId);
     }
 
-    @PutMapping("/events/{eventId}/tags")
+    @PutMapping("/{eventId}/tags")
     public Tag addTagToEvent(@PathVariable UUID eventId, @RequestBody String tagName) {
         return tagService.addTagToEvent(tagName, eventId);
     }
 
-    @DeleteMapping("/events/{eventId}/tags")
+    @DeleteMapping("/{eventId}/tags")
     public Tag removeTagFromEvent(@PathVariable UUID eventId, @RequestBody String tagName) {
         return tagService.removeTagFromEvent(tagName, eventId);
     }

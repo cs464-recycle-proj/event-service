@@ -48,13 +48,19 @@ public class EventService {
         Event existingEvent = eventRepo.findById(id).orElseThrow(() -> new EventNotFoundException(id));
         existingEvent.setName(event.getName());
         existingEvent.setDescription(event.getDescription());
-        existingEvent.setStartDT(event.getStartDT());
-        existingEvent.setEndDT(event.getEndDT());
+        existingEvent.setType(event.getType());
+        existingEvent.setStatus(event.getStatus());
+
         existingEvent.setLocation(event.getLocation());
+        existingEvent.setImageUrl(event.getImageUrl());
+        existingEvent.setOrganizer(event.getOrganizer());
+        
         existingEvent.setCapacity(event.getCapacity());
         existingEvent.setCoins(event.getCoins());
-        existingEvent.setRegStartDT(event.getRegStartDT());
-        existingEvent.setRegEndDT(event.getRegEndDT());
+
+        existingEvent.setStartDT(event.getStartDT());
+        existingEvent.setEndDT(event.getEndDT());
+        
         return eventRepo.save(existingEvent);
     }
 

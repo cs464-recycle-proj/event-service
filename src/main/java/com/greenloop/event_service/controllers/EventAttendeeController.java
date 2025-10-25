@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RestController
-@RequestMapping("/events/{eventId}")
+@RequestMapping("/api/events/{eventId}")
 public class EventAttendeeController {
 
     private final EventAttendeeService attendeeService;
@@ -43,12 +43,12 @@ public class EventAttendeeController {
         return attendeeService.isUserRegistered(eventId, userId);
     }
     // get upcoming events for user
-    @GetMapping("/upcoming-for-user")
+    @GetMapping("/upcoming/joined")
     public List<Event> upcomingEventsForUser(@RequestHeader UUID userId) {
         return attendeeService.upcomingEventForUser(userId);
     }
     // get upcoming events for unjoined user
-    @GetMapping("/upcoming")
+    @GetMapping("/upcoming/unjoined")
     public List<Event> upcomingNotJoinedEvents(@RequestHeader UUID userId) {
         return attendeeService.upcomingNotJoinedEvents(userId);
     }

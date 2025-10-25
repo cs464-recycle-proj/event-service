@@ -37,8 +37,6 @@ public class Event {
 
     private LocalDateTime startDT;
     private LocalDateTime endDT;
-    private LocalDateTime regStartDT;
-    private LocalDateTime regEndDT;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -61,7 +59,7 @@ public class Event {
         this.coins = coins;
         this.startDT = startDT;
         this.endDT = endDT;
-        this.status = EventStatus.CREATED;
+        this.status = EventStatus.REGISTRATION;
     }
 
     /* ======== METHODS ======== */

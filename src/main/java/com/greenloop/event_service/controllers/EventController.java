@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 
 
 @RestController
-@RequestMapping("/events")
+@RequestMapping("/api/events")
 public class EventController {
 
     private final EventService eventService;
@@ -20,7 +20,6 @@ public class EventController {
         this.eventService = eventService;
     }
 
-    // ----- event CRUD -----
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public Event createEvent(@RequestBody Event event) {
