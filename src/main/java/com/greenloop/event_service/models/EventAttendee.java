@@ -31,6 +31,7 @@ public class EventAttendee {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime registeredAt;
+    private LocalDateTime attendedAt;
 
     @ManyToOne
     @JoinColumn(name = "event_id", nullable = false)
