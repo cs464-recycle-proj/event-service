@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.io.ByteArrayOutputStream;
-import java.time.LocalDateTime;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;

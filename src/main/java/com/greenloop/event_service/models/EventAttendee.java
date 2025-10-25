@@ -10,7 +10,6 @@ import org.springframework.data.annotation.CreatedDate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.greenloop.event_service.dtos.RegisterRequestDTO;
 
 @Entity
 @NoArgsConstructor
@@ -39,16 +38,9 @@ public class EventAttendee {
     private Event event;
 
     /* ======== CONSTRUCTORS ======== */
-    public EventAttendee(RegisterRequestDTO request) {
-        this.userId = request.getUserId();
-        this.userEmail = request.getUserEmail();
-    }
-
-    public EventAttendee(UUID userId, String name, String userEmail, Event event) {
+    public EventAttendee(UUID userId, String userEmail) {
         this.userId = userId;
-        this.name = name;
         this.userEmail = userEmail;
-        this.event = event;
     }
 
 }

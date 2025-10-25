@@ -2,6 +2,7 @@ package com.greenloop.event_service.services;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.greenloop.event_service.enums.EventStatus;
 import com.greenloop.event_service.models.Event;
@@ -20,27 +21,29 @@ public class EventAutoSchedulerService {
         this.eventRepo = eventRepo;
     }
 
-    @Scheduled(fixedRate = FIXED_RATE)
-    public void autoStartEvents() {
-        List<Event> toStartEvents = eventRepo.findByStatus(EventStatus.REGISTRATION);
-        for (Event event : toStartEvents) {
-            if (event.getStartDT().isAfter(LocalDateTime.now()) || event.getStartDT().isEqual(LocalDateTime.now()) ) {
-                event.setStatus(EventStatus.ONGOING);
-            }
-        }
+    // @Scheduled(fixedRate = FIXED_RATE)
+    // @Transactional
+    // public void autoStartEvents() {
+    //     List<Event> toStartEvents = eventRepo.findByStatus(EventStatus.REGISTRATION);
+    //     for (Event event : toStartEvents) {
+    //         if (event.getStartDT().isAfter(LocalDateTime.now()) || event.getStartDT().isEqual(LocalDateTime.now()) ) {
+    //             event.setStatus(EventStatus.ONGOING);
+    //         }
+    //     }
 
-        eventRepo.saveAll(toStartEvents);
-    }
+    //     eventRepo.saveAll(toStartEvents);
+    // }
 
-    @Scheduled(fixedRate = FIXED_RATE)
-    public void autoEndEvents() {
-        List<Event> toEndEvents = eventRepo.findByStatus(EventStatus.ONGOING);
-        for (Event event : toEndEvents) {
-            if (event.getEndDT().isAfter(LocalDateTime.now()) || event.getEndDT().isEqual(LocalDateTime.now()) ) {
-                event.setStatus(EventStatus.CLOSED);
-            }
-        }
-        eventRepo.saveAll(toEndEvents);
-    }
+    // @Scheduled(fixedRate = FIXED_RATE)
+    // @Transactional
+    // public void autoEndEvents() {
+    //     List<Event> toEndEvents = eventRepo.findByStatus(EventStatus.ONGOING);
+    //     for (Event event : toEndEvents) {
+    //         if (event.getEndDT().isAfter(LocalDateTime.now()) || event.getEndDT().isEqual(LocalDateTime.now()) ) {
+    //             event.setStatus(EventStatus.CLOSED);
+    //         }
+    //     }
+    //     eventRepo.saveAll(toEndEvents);
+    // }
 
 }

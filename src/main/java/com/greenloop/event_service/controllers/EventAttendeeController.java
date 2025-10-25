@@ -1,6 +1,6 @@
 package com.greenloop.event_service.controllers;
 
-import com.greenloop.event_service.dtos.RegisterRequestDTO;
+import com.greenloop.event_service.exceptions.RoleNotAllowedException;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.services.EventAttendeeService;
 
@@ -18,32 +18,34 @@ public class EventAttendeeController {
 
     // register for event
     @PostMapping("/register")
-    public EventAttendee registerAttendee(@PathVariable UUID eventId, @RequestBody RegisterRequestDTO request) {
-        return attendeeService.registerAttendee(eventId, request);
+    public EventAttendee registerAttendee(@PathVariable UUID eventId, @RequestHeader("X-User-ID") String userId, @RequestHeader("X-User-Email") String userEmail) {
+        return attendeeService.registerAttendee(eventId, UUID.fromString(userId), userEmail);
     }
     // get all event attendees
-    @GetMapping("/{id}/participants")
-    public List<EventAttendee> getAllEventAttendees(@PathVariable UUID eventId) {
+    @GetMapping("/participants")
+    public List<EventAttendee> getAllEventAttendees(@PathVariable UUID eventId, @RequestHeader("X-User-Role") String userRole) {
+        if (!userRole.equals("ADMIN")) {
+            throw new RoleNotAllowedException();
+        }
         return attendeeService.getAllEventAttendees(eventId);
     }
     // get one event attendee
-    @GetMapping("/{id}/participants/{userId}")
-    public EventAttendee getEventAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
-        return attendeeService.getEventAttendee(eventId, userId);
+    @GetMapping("/participants/profile")
+    public EventAttendee getEventAttendee(@PathVariable UUID eventId, @RequestHeader("X-User-ID") String userId, @RequestHeader("X-User-Role") String userRole) {
+        if (!userRole.equals("ADMIN")) {
+            throw new RoleNotAllowedException();
+        }
+        return attendeeService.getEventAttendee(eventId, UUID.fromString(userId));
     }
-    // mark attendances of attendee
-    @PostMapping("/{id}/attendance")
-    public boolean markAttendee(@PathVariable UUID eventId, @RequestHeader UUID userId) {
-        return attendeeService.markedAttendee(eventId, userId);
-    }
-    // check attendance of attendee
-    @GetMapping("/{id}/is-registered")
-    public boolean isRegistered(@PathVariable UUID eventId, @RequestHeader UUID userId) {
-        return attendeeService.isUserRegistered(eventId, userId);
+
+    // check attendance of attendee - for btn from user side
+    @GetMapping("/is-registered")
+    public boolean isRegistered(@PathVariable UUID eventId, @RequestHeader("X-User-ID") String userId) {
+        return attendeeService.isUserRegistered(eventId, UUID.fromString(userId));
     }
     
     // remove attendee from event
-    @DeleteMapping("/{id}/participants/{userId}")
+    @DeleteMapping("/participants/{userId}")
     public void deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
         attendeeService.deregisterAttendee(eventId, userId);
     }

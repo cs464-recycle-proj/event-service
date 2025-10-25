@@ -3,7 +3,6 @@ package com.greenloop.event_service.services;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.greenloop.event_service.dtos.RegisterRequestDTO;
 import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
 import com.greenloop.event_service.exceptions.EventFullException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
@@ -29,14 +28,14 @@ public class EventAttendeeService {
     }
 
     // register attendee to event
-    public EventAttendee registerAttendee(UUID eventId, RegisterRequestDTO request) {
+    public EventAttendee registerAttendee(UUID eventId, UUID userid, String userEmail) {
         Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
 
         if (event.getAttendeeCount() >= event.getCapacity()) {
             throw new EventFullException(event.getId());
         }
 
-        EventAttendee newAttendee = new EventAttendee(request);
+        EventAttendee newAttendee = new EventAttendee(userid, userEmail);
         event.addAttendeeToEvent(newAttendee);
 
         return newAttendee;
@@ -93,11 +92,7 @@ public class EventAttendeeService {
         EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, event.getId()).orElse(null);
         if (attendee == null) {
             // create a new attendee record
-            RegisterRequestDTO r = new RegisterRequestDTO();
-            r.setUserId(req.getUserId());
-            // r.setUsername(req.getUsername());
-            r.setUserEmail(req.getUserEmail());
-            EventAttendee newAtt = new EventAttendee(r);
+            EventAttendee newAtt = new EventAttendee(req.getUserId(), req.getUserEmail());
             newAtt.setEvent(event);
             attendee = attendeeRepo.save(newAtt);
             event.addAttendeeToEvent(attendee);
