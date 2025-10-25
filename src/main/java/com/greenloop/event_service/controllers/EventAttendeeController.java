@@ -42,21 +42,7 @@ public class EventAttendeeController {
     public boolean isRegistered(@PathVariable UUID eventId, @RequestHeader UUID userId) {
         return attendeeService.isUserRegistered(eventId, userId);
     }
-    // get upcoming events for user
-    @GetMapping("/upcoming/joined")
-    public List<Event> upcomingEventsForUser(@RequestHeader UUID userId) {
-        return attendeeService.upcomingEventForUser(userId);
-    }
-    // get upcoming events for unjoined user
-    @GetMapping("/upcoming/unjoined")
-    public List<Event> upcomingNotJoinedEvents(@RequestHeader UUID userId) {
-        return attendeeService.upcomingNotJoinedEvents(userId);
-    }
-    // get past events for user
-    @GetMapping("/past")
-    public List<Event> pastEventsForUser(@PathVariable UUID eventId, @RequestHeader UUID userId) {
-        return attendeeService.pastEventsForUser(userId);
-    }
+    
     // remove attendee from event
     @DeleteMapping("/{id}/participants/{userId}")
     public void deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {

@@ -8,6 +8,8 @@ import java.util.*;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.services.EventService;
 
+import org.springframework.http.ResponseEntity;
+
 import jakarta.validation.Valid;
 
 
@@ -44,6 +46,12 @@ public class EventController {
     @DeleteMapping("/{id}")
     public void deleteEvent(@PathVariable UUID id) {
         eventService.deleteEvent(id);
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> checkHealth() {
+        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
+        return ResponseEntity.ok(response);
     }
 
 }

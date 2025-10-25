@@ -5,9 +5,9 @@ public enum EventType {
     tree_planting,
     workshop,
     cleanups,
-    upcyclying,
+    upcycling,
     volunteering,
     eco_bazaars,
-    online_challenges
-
+    online_challenges,
+    others
 }

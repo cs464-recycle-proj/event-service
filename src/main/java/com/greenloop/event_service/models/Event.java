@@ -23,8 +23,11 @@ public class Event {
 
     private String name;
     private String description;
-    @JsonProperty("category")
+    
+    @Enumerated(EnumType.STRING)
     private EventType type;
+
+    @Enumerated(EnumType.STRING)
     private EventStatus status;
 
     private String location;
