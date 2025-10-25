@@ -1,6 +1,6 @@
 package com.greenloop.event_service.services;
 
-import com.greenloop.event_service.dtos.RegisterRequest;
+import com.greenloop.event_service.dtos.RegisterRequestDTO;
 import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
 import com.greenloop.event_service.exceptions.EventFullException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
@@ -25,7 +25,7 @@ public class EventAttendeeService {
     }
 
     // register attendee to event
-    public EventAttendee registerAttendee(UUID eventId, RegisterRequest request) {
+    public EventAttendee registerAttendee(UUID eventId, RegisterRequestDTO request) {
         Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
 
         if (event.getAttendeeCount() >= event.getCapacity()) {

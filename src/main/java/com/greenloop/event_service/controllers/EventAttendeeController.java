@@ -1,6 +1,6 @@
 package com.greenloop.event_service.controllers;
 
-import com.greenloop.event_service.dtos.RegisterRequest;
+import com.greenloop.event_service.dtos.RegisterRequestDTO;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.services.EventAttendeeService;
 
@@ -18,7 +18,7 @@ public class EventAttendeeController {
 
     // register for event
     @PostMapping("/register")
-    public EventAttendee registerAttendee(@PathVariable UUID eventId, @RequestBody RegisterRequest request) {
+    public EventAttendee registerAttendee(@PathVariable UUID eventId, @RequestBody RegisterRequestDTO request) {
         return attendeeService.registerAttendee(eventId, request);
     }
     // get all event attendees
