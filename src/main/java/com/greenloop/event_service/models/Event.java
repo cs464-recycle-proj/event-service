@@ -38,7 +38,6 @@ public class Event {
     private LocalDateTime startDT;
     private LocalDateTime endDT;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     // QR token used to identify the event when scanned. Generated on create if missing.
     @Column(unique = true)
