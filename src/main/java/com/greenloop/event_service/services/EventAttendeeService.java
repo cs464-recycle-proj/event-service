@@ -3,104 +3,96 @@ package com.greenloop.event_service.services;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
+import com.greenloop.event_service.exceptions.AttendanceAlreadyMarkedException;
+import com.greenloop.event_service.exceptions.AttendeeNotRegisteredException;
 import com.greenloop.event_service.exceptions.EventFullException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
+import com.greenloop.event_service.exceptions.ResourceNotFoundException;
+import com.greenloop.event_service.dtos.EventAttendeeResponse;
 import com.greenloop.event_service.dtos.ScanRequest;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
 import com.greenloop.event_service.repos.EventRepository;
 
+import lombok.AllArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class EventAttendeeService {
 
-    private final EventRepository eventRepo;
-    private final EventAttendeeRepository attendeeRepo;
+    private final EventRepository eventRepository;
+    private final EventAttendeeRepository attendeeRepository;
 
-    public EventAttendeeService(EventRepository eventRepo, EventAttendeeRepository attendeeRepo) {
-        this.eventRepo = eventRepo;
-        this.attendeeRepo = attendeeRepo;
-    }
-
-    // register attendee to event
-    public EventAttendee registerAttendee(UUID eventId, UUID userid, String userEmail) {
-        Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+    public EventAttendeeResponse registerAttendee(UUID eventId, UUID userid, String userEmail) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
 
         if (event.getAttendeeCount() >= event.getCapacity()) {
             throw new EventFullException(event.getId());
         }
 
-        EventAttendee newAttendee = new EventAttendee(userid, userEmail);
+        EventAttendee newAttendee = EventAttendee.builder()
+                .userId(userid)
+                .userEmail(userEmail)
+                .event(event)
+                .build();
+
         event.addAttendeeToEvent(newAttendee);
 
-        return newAttendee;
+        return mapToResponse(newAttendee);
     }
 
-    // get all attendees of event
-    public List<EventAttendee> getAllEventAttendees(UUID eventId) {
-        Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-        return event.getAttendees();
+    public List<EventAttendeeResponse> getAllEventAttendees(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
+        return event.getAttendees()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    // get an attendee of event
-    public EventAttendee getEventAttendee(UUID eventId, UUID userId) {
-        return attendeeRepo.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
-    }
-
-    // mark attendee attendance
-    public boolean markedAttendee(UUID eventId, UUID userId) {
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
-
-        attendee.setAttended(true);
-        attendeeRepo.save(attendee);
-        return true;
-    }
-
-    // check if user is registered for event
     public boolean isUserRegistered(UUID eventId, UUID userId) {
-        Event event = eventRepo.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
-
-        return event.getAttendees().contains(attendee);
+        return attendeeRepository.existsByUserIdAndEventId(userId, eventId);
     }
 
-    // deregister attendee from event
     public void deregisterAttendee(UUID eventId, UUID userId) {
-        // TODO need to check if event will update
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, eventId)
-                .orElseThrow(() -> new AttendeeNotFoundException(eventId));
-        attendeeRepo.delete(attendee);
+        EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendee with id " + userId + " is not found"));
+        attendeeRepository.delete(attendee);
     }
 
-    /**
-     * Mark attendance using a QR token. If attendee doesn't exist, create a
-     * registration entry.
-     */
-    public EventAttendee markAttendanceByToken(ScanRequest req) {
-        Event event = eventRepo.findByQrToken(req.getQrToken())
-                .orElseThrow(() -> new RuntimeException("Event not found for provided QR token"));
+    public EventAttendeeResponse markAttendanceByToken(ScanRequest req, UUID userId, String userEmail) {
+        Event event = eventRepository.findByQrToken(req.getQrToken())
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found for provided QR token"));
 
-        UUID userId = req.getUserId();
-        EventAttendee attendee = attendeeRepo.findByUserIdAndEventId(userId, event.getId()).orElse(null);
-        if (attendee == null) {
-            // create a new attendee record
-            EventAttendee newAtt = new EventAttendee(req.getUserId(), req.getUserEmail());
-            newAtt.setEvent(event);
-            attendee = attendeeRepo.save(newAtt);
-            event.addAttendeeToEvent(attendee);
-            eventRepo.save(event);
-        }
+        EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, event.getId())
+                .orElseThrow(() -> new AttendeeNotRegisteredException(
+                        "User with ID " + userId + " did not register for this event"));
+        
+        if (Boolean.TRUE.equals(attendee.isAttended())) {
+        throw new AttendanceAlreadyMarkedException(
+                "User with ID " + userId + " has already marked attendance for this event");
+    }
 
         attendee.setAttended(true);
         attendee.setAttendedAt(LocalDateTime.now());
-        return attendeeRepo.save(attendee);
+        return mapToResponse(attendeeRepository.save(attendee));
+    }
+
+    private EventAttendeeResponse mapToResponse(EventAttendee attendee) {
+        return EventAttendeeResponse.builder()
+                .id(attendee.getId())
+                .userId(attendee.getUserId())
+                .userEmail(attendee.getUserEmail())
+                .registeredAt(attendee.getRegisteredAt())
+                .attended(attendee.isAttended())
+                .attendedAt(attendee.getAttendedAt())
+                .build();
     }
 }

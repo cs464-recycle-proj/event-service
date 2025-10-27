@@ -9,12 +9,15 @@ import java.util.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.greenloop.event_service.enums.EventType;
+import com.greenloop.event_service.dtos.UpdateEventRequest;
 import com.greenloop.event_service.enums.EventStatus;
 
 @Entity
-@NoArgsConstructor
 @Data
 @Table(name = "events")
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Event {
 
     @Id
@@ -22,8 +25,9 @@ public class Event {
     private UUID id;
 
     private String name;
+
     private String description;
-    
+
     @Enumerated(EnumType.STRING)
     private EventType type;
 
@@ -31,55 +35,29 @@ public class Event {
     private EventStatus status;
 
     private String location;
+
     private String imageUrl;
+
     private String organizer;
 
     private int capacity;
-    private int coins;
-    private int views_count;
 
-    private LocalDateTime startDT;
-    private LocalDateTime endDT;
+    private int coins;
+
+    private LocalDateTime startDateTime;
+
+    private LocalDateTime endDateTime;
 
     @JsonIgnore
-    // QR token used to identify the event when scanned. Generated on create if missing.
     @Column(unique = true)
     private String qrToken;
 
     private LocalDateTime qrGeneratedAt;
-    
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonProperty("attendees")
+    @Builder.Default
     private List<EventAttendee> attendees = new ArrayList<>();
-
-    @OneToMany(mappedBy = "events")
-    private List<Tag> tags = new ArrayList<>();
-
-    /* ======== CONSTRUCTORS ======== */
-    public Event(String name, String description, EventType type, LocalDateTime startDT, LocalDateTime endDT,
-            String location, int capacity, int coins, String imageUrl, String organizer) {
-        this.name = name;
-        this.description = description;
-        this.type = type;
-        this.location = location;
-        this.imageUrl = imageUrl;
-        this.organizer = organizer;
-        this.capacity = capacity;
-        this.coins = coins;
-        this.startDT = startDT;
-        this.endDT = endDT;
-        this.status = EventStatus.REGISTRATION;
-    }
-
-    /* ======== METHODS ======== */
-    @JsonProperty("tags")
-    public List<String> getTagNames() {
-        List<String> tagNames = new ArrayList<>();
-        for (Tag tag : tags) {
-            tagNames.add(tag.getTagName());
-        }
-        return tagNames;
-    }
 
     public EventAttendee addAttendeeToEvent(EventAttendee attendee) {
         attendees.add(attendee);
@@ -92,20 +70,28 @@ public class Event {
         return attendee;
     }
 
-    public Tag addTagToEvent(Tag tag) {
-        tags.add(tag);
-        tag.getEvents().add(this);
-        return tag;
-    }
-
-    public Tag removeTagFromEvent(Tag tag) {
-        tags.remove(tag);
-        tag.getEvents().remove(this);
-        return tag;
-    }
-
     public int getAttendeeCount() {
         return attendees.size();
+    }
+
+    public Event updateFromRequest(UpdateEventRequest request) {
+        Optional.ofNullable(request.getName()).ifPresent(this::setName);
+        Optional.ofNullable(request.getDescription()).ifPresent(this::setDescription);
+        Optional.ofNullable(request.getType())
+                .map(v -> EventType.valueOf(v.toUpperCase()))
+                .ifPresent(this::setType);
+        Optional.ofNullable(request.getStatus())
+                .map(v -> EventStatus.valueOf(v.toUpperCase()))
+                .ifPresent(this::setStatus);
+        Optional.ofNullable(request.getLocation()).ifPresent(this::setLocation);
+        Optional.ofNullable(request.getImageUrl()).ifPresent(this::setImageUrl);
+        Optional.ofNullable(request.getOrganizer()).ifPresent(this::setOrganizer);
+        Optional.ofNullable(request.getCapacity()).ifPresent(this::setCapacity);
+        Optional.ofNullable(request.getCoins()).ifPresent(this::setCoins);
+        Optional.ofNullable(request.getStartDateTime()).ifPresent(this::setStartDateTime);
+        Optional.ofNullable(request.getEndDateTime()).ifPresent(this::setEndDateTime);
+
+        return this;
     }
 
 }

@@ -6,28 +6,32 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Table(name = "event_attendees")
+@Builder
 public class EventAttendee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
     @JsonIgnore
     private UUID userId;
-    private String name;
+
+    private String username;
+
     @JsonProperty("email")
     private String userEmail;
+
+    @Builder.Default
     private boolean attended = false;
 
-    @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime registeredAt;
 
@@ -38,10 +42,8 @@ public class EventAttendee {
     @JsonIgnore
     private Event event;
 
-    /* ======== CONSTRUCTORS ======== */
-    public EventAttendee(UUID userId, String userEmail) {
-        this.userId = userId;
-        this.userEmail = userEmail;
+    @PrePersist
+    public void prePersist() {
+        this.registeredAt = LocalDateTime.now();
     }
-
 }

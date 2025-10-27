@@ -1,13 +1,13 @@
 package com.greenloop.event_service.enums;
 
 public enum EventType {
-    recycling,
-    tree_planting,
-    workshop,
-    cleanups,
-    upcycling,
-    volunteering,
-    eco_bazaars,
-    online_challenges,
-    others
+    RECYCLING,
+    TREE_PLANTING,
+    WORKSHOP,
+    CLEANUPS,
+    UPCYCLING,
+    VOLUNTEERING,
+    ECO_BAZAARS,
+    ONLINE_CHALLENGES,
+    OTHERS
 }
