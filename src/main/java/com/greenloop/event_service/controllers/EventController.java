@@ -23,6 +23,12 @@ public class EventController {
 
     private final EventService eventService;
 
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> checkHealth() {
+        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
+        return ResponseEntity.ok(response);
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     public ResponseEntity<ApiResponse<EventResponse>> createEvent(@RequestBody CreateEventRequest request,

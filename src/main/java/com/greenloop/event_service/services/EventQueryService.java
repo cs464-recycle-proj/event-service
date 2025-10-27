@@ -5,77 +5,75 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.greenloop.event_service.dtos.EventResponse;
 import com.greenloop.event_service.enums.EventStatus;
 import com.greenloop.event_service.enums.EventType;
-import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
 import com.greenloop.event_service.models.Event;
-import com.greenloop.event_service.repos.EventAttendeeRepository;
 import com.greenloop.event_service.repos.EventRepository;
 
 import java.util.*;
 
 @Service
 public class EventQueryService {
-    private final EventRepository eventRepo;
-        private final EventAttendeeRepository attendeeRepo;
+    private final EventRepository eventRepository;
 
-
-    public EventQueryService(EventRepository eventRepo, EventAttendeeRepository attendeeRepo) {
-        this.eventRepo = eventRepo;
-        this.attendeeRepo = attendeeRepo;
+    public EventQueryService(EventRepository eventRepo) {
+        this.eventRepository = eventRepo;
     }
 
-    // get all events 
-    public List<Event> getAllEvents() {
-        return eventRepo.findAll();
+    // get all events
+    public List<EventResponse> getAllEvents() {
+        return eventRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
+
 
     // get event by id
-    public Event getEventById(UUID id) {
-        return eventRepo.findById(id).orElseThrow(() -> new EventNotFoundException(id));
+    public EventResponse getEventById(UUID id) {
+        return eventRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new EventNotFoundException("Event with id " + id + " is not found"));
     }
+
 
     // ---------- USER-EVENT RELATIONS ----------
 
     // get upcoming events for user
-    public List<Event> upcomingEventForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
+    public List<EventResponse> upcomingEventForUser(UUID userId) {
+        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
         LocalDateTime now = LocalDateTime.now();
 
         return events.stream()
-                .filter(e -> e.getStartDT().isAfter(now)) // upcoming only
+                .filter(e -> e.getStartDateTime().isAfter(now))
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     // get past events for user
-    public List<Event> pastEventsForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
+    public List<EventResponse> pastEventsForUser(UUID userId) {
+        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
         LocalDateTime now = LocalDateTime.now();
 
         return events.stream()
-                .filter(e -> e.getEndDT().isBefore(now)) // past only
+                .filter(e -> e.getEndDateTime().isBefore(now))
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     // get upcoming events that user can join
-    public List<Event> upcomingNotJoinedEventsForUser(UUID userId) {
+    public List<EventResponse> upcomingNotJoinedEventsForUser(UUID userId) {
         LocalDateTime now = LocalDateTime.now();
 
         // get all upcoming events (not closed)
-        List<Event> upcomingEvents = eventRepo.findAll().stream()
-                .filter(e -> e.getEndDT().isAfter(now)) // only events not ended
+        List<EventResponse> upcomingEvents = eventRepository.findAll().stream()
+                .filter(e -> e.getEndDateTime().isAfter(now)) // only events not ended
                 .filter(e -> e.getAttendeeCount() < e.getCapacity()) // only events with available slots
                 .filter(e -> e.getAttendees().stream()
                         .noneMatch(a -> a.getUserId().equals(userId))) // exclude events the user has joined
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
 
         return upcomingEvents;
@@ -85,24 +83,25 @@ public class EventQueryService {
 
     // Total events (not closed)
     public long getTotalOpenEvents() {
-        return eventRepo.findAll().stream()
+        return eventRepository.findAll().stream()
                 .filter(e -> EventStatus.CLOSED != e.getStatus())
                 .count();
     }
 
     // Upcoming events in next 30 days
-    public List<Event> getUpcomingEventsNext30Days() {
+    public long getUpcomingEventsNext30Days() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime next30Days = now.plusDays(30);
-        return eventRepo.findAll().stream()
-                .filter(e -> e.getStartDT() != null && e.getStartDT().isAfter(now)
-                        && e.getStartDT().isBefore(next30Days))
-                .collect(Collectors.toList());
+
+        return eventRepository.findAll().stream()
+                .filter(e -> e.getStartDateTime() != null && e.getStartDateTime().isAfter(now)
+                        && e.getStartDateTime().isBefore(next30Days))
+                .count();
     }
 
     // Total participants in open events
     public long getTotalParticipantsInOpenEvents() {
-        return eventRepo.findAll().stream()
+        return eventRepository.findAll().stream()
                 .filter(e -> EventStatus.CLOSED != e.getStatus())
                 .mapToLong(e -> e.getAttendees() != null ? e.getAttendees().size() : 0)
                 .sum();
@@ -111,5 +110,26 @@ public class EventQueryService {
     // Get all event types
     public EventType[] getAllEventTypes() {
         return EventType.values();
+    }
+
+    // ---------- HELPER ----------
+    private EventResponse mapToResponse(Event event) {
+        return EventResponse.builder()
+                .id(event.getId())
+                .capacity(event.getCapacity())
+                .coins(event.getCoins())
+                .description(event.getDescription())
+                .imageUrl(event.getImageUrl())
+                .location(event.getLocation())
+                .name(event.getName())
+                .organizer(event.getOrganizer())
+                .startDateTime(event.getStartDateTime())
+                .endDateTime(event.getEndDateTime())
+                .type(event.getType().name())
+                .status(event.getStatus().name())
+                .qrToken(event.getQrToken())
+                .qrGeneratedAt(event.getQrGeneratedAt())
+                .attendeeCount(event.getAttendeeCount())
+                .build();
     }
 }

@@ -1,7 +1,9 @@
 package com.greenloop.event_service.services;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.greenloop.event_service.dtos.CreateEventRequest;
 import com.greenloop.event_service.dtos.EventResponse;
@@ -16,13 +18,6 @@ import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.io.ByteArrayOutputStream;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.qrcode.QRCodeWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
 
 @Service
 @AllArgsConstructor
@@ -49,10 +44,6 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
         return mapToResponse(savedEvent);
     }
-
-
-
-    
 
     public EventResponse updateEvent(UUID id, UpdateEventRequest request) {
         Event event = eventRepository.findById(id)
@@ -86,6 +77,12 @@ public class EventService {
                 .qrGeneratedAt(event.getQrGeneratedAt())
                 .attendeeCount(event.getAttendeeCount())
                 .build();
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> checkHealth() {
+        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
+        return ResponseEntity.ok(response);
     }
 
     @Scheduled(fixedRate = 300000)
