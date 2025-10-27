@@ -42,7 +42,7 @@ public class EventQueryController {
     }
 
     @GetMapping("/past")
-    public ResponseEntity<ApiResponse<List<EventResponse>>> pastEventsForUser(@PathVariable UUID eventId,
+    public ResponseEntity<ApiResponse<List<EventResponse>>> pastEventsForUser(
             @RequestHeader("X-User-ID") String userId) {
         List<EventResponse> response = queryService.pastEventsForUser(UUID.fromString(userId));
         return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", response));

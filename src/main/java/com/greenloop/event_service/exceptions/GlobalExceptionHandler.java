@@ -1,7 +1,5 @@
 package com.greenloop.event_service.exceptions;
 
-import javax.management.relation.RoleNotFoundException;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,8 +30,8 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
-    @ExceptionHandler(RoleNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRoleNotFound(RoleNotFoundException ex) {
+    @ExceptionHandler(RoleNotAllowedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRoleNotAllowed(RoleNotAllowedException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ex.getMessage()));
@@ -50,6 +48,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAttendanceAlreadyMarked(AttendanceAlreadyMarkedException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(EventFullException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEventFullException(EventFullException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(AlreadyRegisteredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserAlreadyRegistered(AlreadyRegisteredException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidEventStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidEventStateException(InvalidEventStateException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

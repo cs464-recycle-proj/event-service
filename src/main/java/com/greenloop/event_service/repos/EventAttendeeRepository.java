@@ -11,7 +11,5 @@ public interface EventAttendeeRepository extends JpaRepository<EventAttendee, UU
 
     Optional<EventAttendee> findByUserIdAndEventId(UUID userId, UUID eventId);
 
-    Optional<EventAttendee> findByUserId(UUID userId);
-
     boolean existsByUserIdAndEventId(UUID userId, UUID eventId);
 }

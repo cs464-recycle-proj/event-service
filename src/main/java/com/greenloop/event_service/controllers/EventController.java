@@ -54,14 +54,13 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteEvent(@PathVariable UUID id,
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id,
             @RequestHeader("X-User-Role") String userRole) {
         if (!userRole.equals("ADMIN")) {
             throw new RoleNotAllowedException();
         }
         eventService.deleteEvent(id);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.noContent().build();
     }
+
 }

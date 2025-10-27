@@ -25,7 +25,7 @@ public class EventAttendeeController {
             @RequestHeader("X-User-ID") String userId,
             @RequestHeader("X-User-Email") String userEmail) {
         EventAttendeeResponse response = attendeeService.registerAttendee(eventId, UUID.fromString(userId), userEmail);
-        return ResponseEntity.ok(ApiResponse.success("Attendeee registered successfully", response));
+        return ResponseEntity.ok(ApiResponse.success("Attendee registered successfully", response));
 
     }
 
@@ -46,11 +46,9 @@ public class EventAttendeeController {
     }
 
     @DeleteMapping("/participants/{userId}")
-    public ResponseEntity<ApiResponse<Void>> deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
+    public ResponseEntity<Void> deregisterAttendee(@PathVariable UUID eventId, @PathVariable UUID userId) {
         attendeeService.deregisterAttendee(eventId, userId);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.noContent().build();
     }
 
     @ResponseStatus(HttpStatus.CREATED)

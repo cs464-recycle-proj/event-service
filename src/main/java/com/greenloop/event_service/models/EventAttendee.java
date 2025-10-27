@@ -13,7 +13,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Table(name = "event_attendees")
+@Table(name = "event_attendees", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "user_id", "event_id" })
+})
 @Builder
 public class EventAttendee {
 
