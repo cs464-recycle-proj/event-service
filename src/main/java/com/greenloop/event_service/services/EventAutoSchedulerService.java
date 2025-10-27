@@ -1,25 +1,27 @@
 package com.greenloop.event_service.services;
 
-import org.springframework.scheduling.annotation.Scheduled;
+// import java.time.LocalDateTime;
+// import java.util.*;
+
+
+// import org.springframework.scheduling.annotation.Scheduled;
+// import org.springframework.transaction.annotation.Transactional;
+// import com.greenloop.event_service.enums.EventStatus;
+// import com.greenloop.event_service.models.Event;
+// import com.greenloop.event_service.repos.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.greenloop.event_service.enums.EventStatus;
-import com.greenloop.event_service.models.Event;
-import com.greenloop.event_service.repos.*;
 
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Service
 public class EventAutoSchedulerService {
 
-    private final EventRepository eventRepo;
-    private final int FIXED_RATE = 60000; // every min
+    // private final EventRepository eventRepo;
+    // private final int FIXED_RATE = 60000; // every min
 
-    public EventAutoSchedulerService(EventRepository eventRepo) {
-        this.eventRepo = eventRepo;
-    }
+    // public EventAutoSchedulerService(EventRepository eventRepo) {
+    //     this.eventRepo = eventRepo;
+    // }
 
     // @Scheduled(fixedRate = FIXED_RATE)
     // @Transactional
