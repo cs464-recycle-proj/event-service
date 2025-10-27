@@ -1,150 +1,131 @@
 package com.greenloop.event_service.services;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import com.greenloop.event_service.exceptions.AttendeeNotFoundException;
+import com.greenloop.event_service.dtos.CreateEventRequest;
+import com.greenloop.event_service.dtos.EventResponse;
+import com.greenloop.event_service.dtos.UpdateEventRequest;
+import com.greenloop.event_service.enums.EventStatus;
+import com.greenloop.event_service.enums.EventType;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
 import com.greenloop.event_service.models.Event;
-import com.greenloop.event_service.models.Tag;
 import com.greenloop.event_service.repos.*;
+
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.io.ByteArrayOutputStream;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.qrcode.QRCodeWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
 
 @Service
+@AllArgsConstructor
 public class EventService {
 
-    private final EventRepository eventRepo;
-    private final EventAttendeeRepository attendeeRepo;
-    private final TagRepository tagRepo;
+    private final EventRepository eventRepository;
 
-    public EventService(EventRepository eventRepo, EventAttendeeRepository attendeeRepo, TagRepository tagRepo) {
-        this.eventRepo = eventRepo;
-        this.attendeeRepo = attendeeRepo;
-        this.tagRepo = tagRepo;
+    public EventResponse createEvent(CreateEventRequest request) {
+        Event event = Event.builder()
+                .capacity(request.getCapacity())
+                .name(request.getName())
+                .description(request.getDescription())
+                .coins(request.getCoins())
+                .organizer(request.getOrganizer())
+                .startDateTime(request.getStartDateTime())
+                .endDateTime(request.getEndDateTime())
+                .imageUrl(request.getImageUrl())
+                .type(EventType.valueOf(request.getType().toUpperCase()))
+                .status(EventStatus.REGISTRATION)
+                .qrToken(UUID.randomUUID().toString())
+                .qrGeneratedAt(LocalDateTime.now())
+                .build();
+
+        Event savedEvent = eventRepository.save(event);
+        return mapToResponse(savedEvent);
     }
 
-    // ----- event CRUD -----
-    public Event createEvent(Event event) {
-
-        for (Tag tag : event.getTags()) {
-            Tag existingTag = tagRepo.findByTagName(tag.getTagName());
-            if (existingTag == null) {
-                // Save the new tag if not found
-                existingTag = tagRepo.save(tag);
-            }
-            event.addTagToEvent(existingTag);
-        }
-
-        // Save event
-        // Ensure qrToken exists so admins and users can access the QR immediately after creation
-        if (event.getQrToken() == null || event.getQrToken().isEmpty()) {
-            event.setQrToken(UUID.randomUUID().toString());
-            event.setQrGeneratedAt(LocalDateTime.now());
-        }
-        return eventRepo.save(event);
+    public List<EventResponse> getAllEvents() {
+        return eventRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Generate a PNG byte[] for the event's QR token. Encodes the token string.
-     */
-    public byte[] getQrCodeImage(UUID eventId, int width, int height) {
-        Event event = getEventById(eventId);
-        String token = event.getQrToken();
-        if (token == null) throw new RuntimeException("QR token not found for event");
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            QRCodeWriter qrWriter = new QRCodeWriter();
-            BitMatrix bitMatrix = qrWriter.encode(token, BarcodeFormat.QR_CODE, width, height);
-            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", baos);
-            return baos.toByteArray();
-        } catch (WriterException | java.io.IOException e) {
-            throw new RuntimeException("Failed to create QR image", e);
-        }
+    public EventResponse getEventById(UUID id) {
+        return eventRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new EventNotFoundException("Event with id " + id + " is not found"));
     }
 
-    public List<Event> getAllEvents() {
-        return eventRepo.findAll();
-    }
-
-    public Event getEventById(UUID id) {
-        return eventRepo.findById(id).orElseThrow(() -> new EventNotFoundException(id));
-    }
-
-    public Event updateEvent(UUID id, Event event) {
-        Event existingEvent = eventRepo.findById(id).orElseThrow(() -> new EventNotFoundException(id));
-        existingEvent.setName(event.getName());
-        existingEvent.setDescription(event.getDescription());
-        existingEvent.setType(event.getType());
-        existingEvent.setStatus(event.getStatus());
-
-        existingEvent.setLocation(event.getLocation());
-        existingEvent.setImageUrl(event.getImageUrl());
-        existingEvent.setOrganizer(event.getOrganizer());
-        
-        existingEvent.setCapacity(event.getCapacity());
-        existingEvent.setCoins(event.getCoins());
-
-        existingEvent.setStartDT(event.getStartDT());
-        existingEvent.setEndDT(event.getEndDT());
-        
-        return eventRepo.save(existingEvent);
+    public EventResponse updateEvent(UUID id, UpdateEventRequest request) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EventNotFoundException("Event with id " + id + " is not found"));
+        event.updateFromRequest(request);
+        return mapToResponse(eventRepository.save(event));
     }
 
     public void deleteEvent(UUID id) {
-        eventRepo.deleteById(id);
+        if (!eventRepository.existsById(id)) {
+            throw new EventNotFoundException("Event with id " + id + " is not found");
+        }
+        eventRepository.deleteById(id);
     }
 
-     // get upcoming events for user
-    public List<Event> upcomingEventForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
+    public List<EventResponse> upcomingEventForUser(UUID userId) {
+        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
         LocalDateTime now = LocalDateTime.now();
 
         return events.stream()
-                .filter(e -> e.getStartDT().isAfter(now)) // upcoming only
+                .filter(e -> e.getStartDateTime().isAfter(now))
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    // get past events for user
-    public List<Event> pastEventsForUser(UUID userId) {
-
-        attendeeRepo.findByUserId(userId)
-                .orElseThrow(() -> new AttendeeNotFoundException(userId));
-
-        List<Event> events = eventRepo.findAllEventsByAttendeeId(userId);
+    public List<EventResponse> pastEventsForUser(UUID userId) {
+        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
         LocalDateTime now = LocalDateTime.now();
 
         return events.stream()
-                .filter(e -> e.getEndDT().isBefore(now)) // past only
+                .filter(e -> e.getEndDateTime().isBefore(now))
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    // get upcoming events that user can join
-    public List<Event> upcomingNotJoinedEvents(UUID userId) {
+    private EventResponse mapToResponse(Event event) {
+        return EventResponse.builder()
+                .id(event.getId())
+                .capacity(event.getCapacity())
+                .coins(event.getCoins())
+                .description(event.getDescription())
+                .imageUrl(event.getImageUrl())
+                .location(event.getLocation())
+                .name(event.getName())
+                .organizer(event.getOrganizer())
+                .startDateTime(event.getStartDateTime())
+                .endDateTime(event.getEndDateTime())
+                .type(event.getType().name())
+                .status(event.getStatus().name())
+                .qrToken(event.getQrToken())
+                .qrGeneratedAt(event.getQrGeneratedAt())
+                .attendeeCount(event.getAttendeeCount())
+                .build();
+    }
+
+    @Scheduled(fixedRate = 300000)
+    public void updateEventStatuses() {
         LocalDateTime now = LocalDateTime.now();
 
-        // get all upcoming events (not closed)
-        List<Event> upcomingEvents = eventRepo.findAll().stream()
-                .filter(e -> e.getEndDT().isAfter(now)) // only events not ended
-                .filter(e -> e.getAttendeeCount() < e.getCapacity()) // only events with available slots
-                .filter(e -> e.getAttendees().stream()
-                        .noneMatch(a -> a.getUserId().equals(userId))) // exclude events the user has joined
-                .collect(Collectors.toList());
+        // Transition events from REGISTRATION OR FULL to ONGOING
+        eventRepository.updateStatusToOngoing(
+                EventStatus.REGISTRATION,
+                EventStatus.FULL,
+                EventStatus.ONGOING,
+                now);
 
-        return upcomingEvents;
+        // Transition events from ONGOING to CLOSED
+        eventRepository.updateStatusToClosed(
+                EventStatus.ONGOING,
+                EventStatus.CLOSED,
+                now);
     }
-
-
 }
