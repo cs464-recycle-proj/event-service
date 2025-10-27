@@ -3,13 +3,16 @@ package com.greenloop.event_service.services;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.greenloop.event_service.exceptions.AlreadyRegisteredException;
 import com.greenloop.event_service.exceptions.AttendanceAlreadyMarkedException;
 import com.greenloop.event_service.exceptions.AttendeeNotRegisteredException;
 import com.greenloop.event_service.exceptions.EventFullException;
 import com.greenloop.event_service.exceptions.EventNotFoundException;
+import com.greenloop.event_service.exceptions.InvalidEventStateException;
 import com.greenloop.event_service.exceptions.ResourceNotFoundException;
 import com.greenloop.event_service.dtos.EventAttendeeResponse;
 import com.greenloop.event_service.dtos.ScanRequest;
+import com.greenloop.event_service.enums.EventStatus;
 import com.greenloop.event_service.models.Event;
 import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
@@ -33,8 +36,12 @@ public class EventAttendeeService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
 
+        if (attendeeRepository.existsByUserIdAndEventId(userid, eventId)) {
+            throw new AlreadyRegisteredException("User already registered for this event");
+        }
+
         if (event.getAttendeeCount() >= event.getCapacity()) {
-            throw new EventFullException(event.getId());
+            throw new EventFullException("Event with id " + eventId + " is full");
         }
 
         EventAttendee newAttendee = EventAttendee.builder()
@@ -71,14 +78,18 @@ public class EventAttendeeService {
         Event event = eventRepository.findByQrToken(req.getQrToken())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found for provided QR token"));
 
+        if (event.getStatus() != EventStatus.ONGOING) {
+            throw new InvalidEventStateException("Attendance can only be marked for ongoing events");
+        }
+
         EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, event.getId())
                 .orElseThrow(() -> new AttendeeNotRegisteredException(
                         "User with ID " + userId + " did not register for this event"));
-        
-        if (Boolean.TRUE.equals(attendee.isAttended())) {
-        throw new AttendanceAlreadyMarkedException(
-                "User with ID " + userId + " has already marked attendance for this event");
-    }
+
+        if (attendee.isAttended()) {
+            throw new AttendanceAlreadyMarkedException(
+                    "User with ID " + userId + " has already marked attendance for this event");
+        }
 
         attendee.setAttended(true);
         attendee.setAttendedAt(LocalDateTime.now());

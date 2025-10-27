@@ -60,15 +60,13 @@ public class EventController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteEvent(@PathVariable UUID id,
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id,
             @RequestHeader("X-User-Role") String userRole) {
         if (!userRole.equals("ADMIN")) {
             throw new RoleNotAllowedException();
         }
         eventService.deleteEvent(id);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/upcoming/joined")
@@ -79,7 +77,7 @@ public class EventController {
     }
 
     @GetMapping("/past")
-    public ResponseEntity<ApiResponse<List<EventResponse>>> pastEventsForUser(@PathVariable UUID eventId,
+    public ResponseEntity<ApiResponse<List<EventResponse>>> pastEventsForUser(
             @RequestHeader("X-User-ID") String userId) {
         List<EventResponse> response = eventService.pastEventsForUser(UUID.fromString(userId));
         return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", response));
