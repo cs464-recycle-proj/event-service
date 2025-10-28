@@ -293,19 +293,19 @@ class EventServiceTest {
         verify(eventRepository).findAllEventsByAttendeeId(userId);
     }
 
-    @Test
-    void updateEventStatuses_TransitionsCorrectly() {
-        eventService.updateEventStatuses();
+    // @Test
+    // void updateEventStatuses_TransitionsCorrectly() {
+    //     eventService.updateEventStatuses();
 
-        verify(eventRepository).updateStatusToOngoing(
-                eq(EventStatus.REGISTRATION),
-                eq(EventStatus.FULL),
-                eq(EventStatus.ONGOING),
-                any(LocalDateTime.class));
+    //     verify(eventRepository).updateStatusToOngoing(
+    //             eq(EventStatus.REGISTRATION),
+    //             eq(EventStatus.FULL),
+    //             eq(EventStatus.ONGOING),
+    //             any(LocalDateTime.class));
 
-        verify(eventRepository).updateStatusToClosed(
-                eq(EventStatus.ONGOING),
-                eq(EventStatus.CLOSED),
-                any(LocalDateTime.class));
-    }
+    //     verify(eventRepository).updateStatusToClosed(
+    //             eq(EventStatus.ONGOING),
+    //             eq(EventStatus.CLOSED),
+    //             any(LocalDateTime.class));
+    // }
 }

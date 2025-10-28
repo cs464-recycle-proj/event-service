@@ -51,7 +51,6 @@ public class EventAttendeeController {
         return ResponseEntity.noContent().build();
     }
 
-    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/scan")
     public ResponseEntity<ApiResponse<EventAttendeeResponse>> scanAndMarkAttendance(@RequestBody ScanRequest req,
             @RequestHeader("X-User-ID") String userId,

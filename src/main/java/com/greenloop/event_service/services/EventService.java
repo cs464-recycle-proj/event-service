@@ -34,6 +34,7 @@ public class EventService {
                 .startDateTime(request.getStartDateTime())
                 .endDateTime(request.getEndDateTime())
                 .imageUrl(request.getImageUrl())
+                .location(request.getLocation())
                 .type(EventType.valueOf(request.getType().toUpperCase()))
                 .status(EventStatus.REGISTRATION)
                 .qrToken(UUID.randomUUID().toString())
@@ -111,21 +112,21 @@ public class EventService {
                 .build();
     }
 
-    @Scheduled(fixedRate = 300000)
-    public void updateEventStatuses() {
-        LocalDateTime now = LocalDateTime.now();
+    // @Scheduled(fixedRate = 300000)
+    // public void updateEventStatuses() {
+    //     LocalDateTime now = LocalDateTime.now();
 
-        // Transition events from REGISTRATION OR FULL to ONGOING
-        eventRepository.updateStatusToOngoing(
-                EventStatus.REGISTRATION,
-                EventStatus.FULL,
-                EventStatus.ONGOING,
-                now);
+    //     // Transition events from REGISTRATION OR FULL to ONGOING
+    //     eventRepository.updateStatusToOngoing(
+    //             EventStatus.REGISTRATION,
+    //             EventStatus.FULL,
+    //             EventStatus.ONGOING,
+    //             now);
 
-        // Transition events from ONGOING to CLOSED
-        eventRepository.updateStatusToClosed(
-                EventStatus.ONGOING,
-                EventStatus.CLOSED,
-                now);
-    }
+    //     // Transition events from ONGOING to CLOSED
+    //     eventRepository.updateStatusToClosed(
+    //             EventStatus.ONGOING,
+    //             EventStatus.CLOSED,
+    //             now);
+    // }
 }
