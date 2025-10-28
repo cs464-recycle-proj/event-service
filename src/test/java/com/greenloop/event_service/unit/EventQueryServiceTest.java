@@ -100,7 +100,7 @@ class EventQueryServiceTest {
         verify(eventRepository).findById(eventId);
     }
 
-    @Test
+        @Test
     void upcomingEventForUser_Success() {
         UUID userId = UUID.randomUUID();
         LocalDateTime now = LocalDateTime.now();
