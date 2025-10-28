@@ -96,6 +96,12 @@ public class EventAttendeeService {
         return mapToResponse(attendeeRepository.save(attendee));
     }
 
+    public EventAttendeeResponse getEventAttendeeById(UUID eventId, UUID userId) {
+        EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendee did not sign up for this event"));
+        return mapToResponse(attendee);
+    }
+
     private EventAttendeeResponse mapToResponse(EventAttendee attendee) {
         return EventAttendeeResponse.builder()
                 .id(attendee.getId())

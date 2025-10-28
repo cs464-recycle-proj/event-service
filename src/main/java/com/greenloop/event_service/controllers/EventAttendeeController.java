@@ -59,4 +59,12 @@ public class EventAttendeeController {
         return ResponseEntity.ok(ApiResponse.success("Attendance marked successfully", response));
 
     }
+
+    @GetMapping("/user")
+    public ResponseEntity<ApiResponse<EventAttendeeResponse>> getEventAttendee(@PathVariable UUID eventId,
+            @RequestHeader("X-User-ID") String userId) {
+        EventAttendeeResponse response = attendeeService.getEventAttendeeById(eventId, UUID.fromString(userId));
+        return ResponseEntity.ok(ApiResponse.success("Attendee retrived successfully", response));
+
+    }
 }
