@@ -1,7 +1,9 @@
 package com.greenloop.event_service.services;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.greenloop.event_service.dtos.CreateEventRequest;
 import com.greenloop.event_service.dtos.EventResponse;
@@ -16,7 +18,6 @@ import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -45,19 +46,6 @@ public class EventService {
         return mapToResponse(savedEvent);
     }
 
-    public List<EventResponse> getAllEvents() {
-        return eventRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public EventResponse getEventById(UUID id) {
-        return eventRepository.findById(id)
-                .map(this::mapToResponse)
-                .orElseThrow(() -> new EventNotFoundException("Event with id " + id + " is not found"));
-    }
-
     public EventResponse updateEvent(UUID id, UpdateEventRequest request) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventNotFoundException("Event with id " + id + " is not found"));
@@ -70,26 +58,6 @@ public class EventService {
             throw new EventNotFoundException("Event with id " + id + " is not found");
         }
         eventRepository.deleteById(id);
-    }
-
-    public List<EventResponse> upcomingEventForUser(UUID userId) {
-        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
-        LocalDateTime now = LocalDateTime.now();
-
-        return events.stream()
-                .filter(e -> e.getStartDateTime().isAfter(now))
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    public List<EventResponse> pastEventsForUser(UUID userId) {
-        List<Event> events = eventRepository.findAllEventsByAttendeeId(userId);
-        LocalDateTime now = LocalDateTime.now();
-
-        return events.stream()
-                .filter(e -> e.getEndDateTime().isBefore(now))
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
     }
 
     private EventResponse mapToResponse(Event event) {

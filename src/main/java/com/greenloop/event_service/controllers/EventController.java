@@ -1,7 +1,9 @@
 package com.greenloop.event_service.controllers;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.*;
 
 import com.greenloop.event_service.dtos.ApiResponse;
@@ -10,8 +12,6 @@ import com.greenloop.event_service.dtos.EventResponse;
 import com.greenloop.event_service.dtos.UpdateEventRequest;
 import com.greenloop.event_service.exceptions.RoleNotAllowedException;
 import com.greenloop.event_service.services.EventService;
-
-import org.springframework.http.ResponseEntity;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -22,6 +22,12 @@ import lombok.AllArgsConstructor;
 public class EventController {
 
     private final EventService eventService;
+
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> checkHealth() {
+        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
+        return ResponseEntity.ok(response);
+    }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
@@ -34,18 +40,6 @@ public class EventController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Event created successfully", response));
-    }
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<EventResponse>>> getAllEvents() {
-        List<EventResponse> response = eventService.getAllEvents();
-        return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", response));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<EventResponse>> getEvent(@PathVariable UUID id) {
-        EventResponse response = eventService.getEventById(id);
-        return ResponseEntity.ok(ApiResponse.success("Event retrieved successfully", response));
     }
 
     @PutMapping("/{id}")
@@ -67,26 +61,6 @@ public class EventController {
         }
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/upcoming/joined")
-    public ResponseEntity<ApiResponse<List<EventResponse>>> upcomingEventsForUser(
-            @RequestHeader("X-User-ID") String userId) {
-        List<EventResponse> response = eventService.upcomingEventForUser(UUID.fromString(userId));
-        return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", response));
-    }
-
-    @GetMapping("/past")
-    public ResponseEntity<ApiResponse<List<EventResponse>>> pastEventsForUser(
-            @RequestHeader("X-User-ID") String userId) {
-        List<EventResponse> response = eventService.pastEventsForUser(UUID.fromString(userId));
-        return ResponseEntity.ok(ApiResponse.success("Events retrieved successfully", response));
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> checkHealth() {
-        Map<String, String> response = Collections.singletonMap("status", "Event Service is Up and Running!");
-        return ResponseEntity.ok(response);
     }
 
 }

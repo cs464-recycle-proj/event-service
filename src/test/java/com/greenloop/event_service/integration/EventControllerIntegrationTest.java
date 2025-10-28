@@ -35,8 +35,8 @@ class EventControllerIntegrationTest {
     @MockBean
     private EventService eventService;
 
+
     private static final UUID EVENT_ID = UUID.randomUUID();
-    private static final UUID USER_ID = UUID.randomUUID();
 
     @Test
     void createEvent_AsAdmin_Success() throws Exception {
@@ -82,42 +82,6 @@ class EventControllerIntegrationTest {
                 .andExpect(status().isForbidden());
 
         verify(eventService, never()).createEvent(any());
-    }
-
-    @Test
-    void getAllEvents_Success() throws Exception {
-        List<EventResponse> responses = Arrays.asList(
-                EventResponse.builder().id(EVENT_ID).name("Event 1").build(),
-                EventResponse.builder().id(UUID.randomUUID()).name("Event 2").build()
-        );
-
-        when(eventService.getAllEvents()).thenReturn(responses);
-
-        mockMvc.perform(get("/api/events"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2));
-
-        verify(eventService).getAllEvents();
-    }
-
-    @Test
-    void getEvent_Success() throws Exception {
-        EventResponse response = EventResponse.builder()
-                .id(EVENT_ID)
-                .name("Test Event")
-                .build();
-
-        when(eventService.getEventById(EVENT_ID)).thenReturn(response);
-
-        mockMvc.perform(get("/api/events/{id}", EVENT_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.id").value(EVENT_ID.toString()))
-                .andExpect(jsonPath("$.data.name").value("Test Event"));
-
-        verify(eventService).getEventById(EVENT_ID);
     }
 
     @Test
@@ -177,50 +141,6 @@ class EventControllerIntegrationTest {
                 .andExpect(status().isForbidden());
 
         verify(eventService, never()).deleteEvent(any());
-    }
-
-    @Test
-    void upcomingEventsForUser_Success() throws Exception {
-        List<EventResponse> responses = Arrays.asList(
-                EventResponse.builder()
-                        .id(EVENT_ID)
-                        .name("Upcoming Event")
-                        .startDateTime(LocalDateTime.now().plusDays(5))
-                        .build()
-        );
-
-        when(eventService.upcomingEventForUser(USER_ID)).thenReturn(responses);
-
-        mockMvc.perform(get("/api/events/upcoming/joined")
-                        .header("X-User-ID", USER_ID.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].name").value("Upcoming Event"));
-
-        verify(eventService).upcomingEventForUser(USER_ID);
-    }
-
-    @Test
-    void pastEventsForUser_Success() throws Exception {
-        List<EventResponse> responses = Arrays.asList(
-                EventResponse.builder()
-                        .id(EVENT_ID)
-                        .name("Past Event")
-                        .endDateTime(LocalDateTime.now().minusDays(1))
-                        .build()
-        );
-
-        when(eventService.pastEventsForUser(USER_ID)).thenReturn(responses);
-
-        mockMvc.perform(get("/api/events/past")
-                        .header("X-User-ID", USER_ID.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].name").value("Past Event"));
-
-        verify(eventService).pastEventsForUser(USER_ID);
     }
 
     @Test
