@@ -1,193 +1,254 @@
-"# Event Service
+# 🎟️ Event Service
 
-A comprehensive Spring Boot microservice for managing environmental sustainability events, including event lifecycle management, attendee registration, QR code-based check-ins, and analytics.
+## 📖 API Documentation
 
-## Features
+The Event Service includes **Javadoc-generated API documentation** for all public classes and methods.
 
-- **Event Management**: Full CRUD operations for events (admin-only)
-- **Event Discovery**: Public APIs for browsing and searching events
-- **Attendee Management**: Registration, deregistration, and attendance tracking
-- **QR Code Integration**: Generate and scan QR codes for event check-ins using ZXing
-- **User-Event Relationships**: Track upcoming and past events per user
-- **Analytics**: Event statistics (open events, upcoming events, participant counts)
-- **Event Types**: Support for multiple event categories (Workshop, Tree Planting, Beach Cleanup, etc.)
-
-## API Documentation
-
-### Swagger/OpenAPI
-
-Access the interactive API documentation:
-- **Development**: http://localhost:8083/swagger-ui.html
-- **API Docs JSON**: http://localhost:8083/v3/api-docs
-
-## Test Coverage
-
-Generate and view test coverage reports:
+* **Location:** [`docs/apidocs/index.html`](https://cs464-recycle-proj.github.io/event-service/apidocs/index.html)
+* **Usage:** View endpoints, method signatures, and comments for developers integrating or contributing to the Event Service.
+* **Example:** Open directly in your browser:
 
 ```bash
-# Run tests with coverage
-mvn clean test
-
-# Generate Jacoco coverage report
-mvn jacoco:report
-
-# View report
-# Open: target/site/jacoco/index.html
+# From repo root
+open docs/apidocs/index.html   # Mac/Linux
+start docs\apidocs\index.html  # Windows
 ```
 
-## Getting Started
+> 💡 Keep this folder updated by running: `mvn javadoc:javadoc`
+
+---
+
+### 🧭 Swagger / OpenAPI
+
+Interactive REST API documentation is provided via **SpringDoc OpenAPI**.
+
+* **Endpoints:**
+
+  * OpenAPI JSON: `/v3/api-docs`
+  * Swagger UI: `/swagger-ui.html`
+
+Open locally:
+
+```
+http://localhost:8083/swagger-ui.html
+```
+
+---
+
+## 📊 Test Coverage
+
+The project includes **unit and integration tests** with coverage reports generated using **JaCoCo**.
+
+* **Current coverage:** 92%
+
+![Test Coverage](docs/coverage.png)
+
+To regenerate coverage reports:
+
+```bash
+./mvnw clean test jacoco:report
+open target/site/jacoco/index.html
+```
+
+---
+
+## 📘 Description
+
+**event-service** is a Spring Boot–based microservice responsible for **managing sustainability events** within the GreenLoop ecosystem.
+
+Key features include:
+
+* **Event CRUD operations** (admin-only create, update, delete)
+* **Public event discovery** and search
+* **Attendee management** (registration, deregistration, and attendance tracking)
+* **QR Code check-ins** using **ZXing**
+* **Event analytics** (open events, upcoming events, and participation stats)
+* **User–Event relationships** tracking (upcoming and past events)
+
+**Service Port:** `8083`
+**Database:** Supabase (PostgreSQL) – Schema: `event_service`
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- **Java 21** or higher
-- **Maven 3.8+** or use included wrapper (`mvnw`)
-- **PostgreSQL** database (Supabase recommended)
+* Docker & Docker Compose
+* Java 21
+* Maven (wrapper included)
+* `.env` file with environment variables
 
-### Configuration
+### Environment Variables
 
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
+Create `.env` in the `event-service` folder:
 
-2. Update `.env` with your database credentials:
-   ```properties
-   DATABASE_URL=jdbc:postgresql://your-db-host:5432/your-database-name
-   DATABASE_USERNAME=your-username
-   DATABASE_PASSWORD=your-password
-   ```
-
-### Running the Service
-
-```bash
-# Using Maven wrapper
-./mvnw spring-boot:run
-
-# Or using installed Maven
-mvn spring-boot:run
+```env
+DATABASE_URL=jdbc:postgresql://your-supabase-host.pooler.supabase.com:5432/postgres?sslmode=require
+DATABASE_USERNAME=postgres.your_project_id
+DATABASE_PASSWORD=your_database_password
 ```
 
-The service will start on port **8083**.
+See `.env.example` for a complete template.
 
-## Testing
+---
+
+## ⚙️ Configuration
+
+### Application Properties
+
+* **Server Port:** `server.port=8083`
+* **Database:** PostgreSQL connection (from environment variables)
+* **Hibernate:** `ddl-auto=update` (use `validate` in production)
+* **Schema:** `event_service`
+* **Actuator:** Health and info endpoints exposed (`/actuator/health`, `/actuator/info`)
+
+---
+
+## 🧪 Testing
 
 ```bash
 # Run all tests
-mvn test
+./mvnw test
+
+# Run tests + generate coverage
+./mvnw test jacoco:report
 
 # Run specific test class
-mvn test -Dtest=EventServiceTest
+./mvnw test -Dtest=EventServiceTest
 
-# Run tests with coverage
-mvn clean test jacoco:report
+# Run with test profile
+mvn test -Dspring.profiles.active=test
 ```
 
-## API Endpoints
+### Unit Tests
 
-### Event Query Endpoints (Public/User)
+* `EventServiceTest` – Service layer unit tests with mocked repositories
+* `EventControllerTest` – REST controller integration tests using MockMvc
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/events` | Get all events |
-| GET | `/api/events/{id}` | Get event by ID |
-| GET | `/api/events/upcoming/joined` | Get upcoming events for authenticated user |
-| GET | `/api/events/past` | Get past events for authenticated user |
-| GET | `/api/events/types` | Get all event types |
+---
 
-### Event Analytics Endpoints
+## 🧩 Integration
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/events/stats/open/total` | Total count of open events |
-| GET | `/api/events/stats/upcoming/30days` | Upcoming events in next 30 days |
-| GET | `/api/events/stats/open/participants` | Total participants in open events |
+This service integrates seamlessly with the **Gateway Service** and other GreenLoop microservices:
 
-### Event Management Endpoints (Admin-Only)
+* Accepts authenticated requests with headers injected by Gateway:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/events` | Create new event |
-| PUT | `/api/events/{id}` | Update event |
-| DELETE | `/api/events/{id}` | Delete event |
+  * `X-User-ID`
+  * `X-User-Email`
+  * `X-User-Role`
+* Communicates with:
 
-### Attendee Management Endpoints
+  * **User Service** – For validating users during event registration
+  * **Gamification Service** – To award coins after attendance is marked
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/events/{eventId}/attendees` | Register for event |
-| GET | `/api/events/{eventId}/attendees` | Get all event attendees |
-| GET | `/api/events/{eventId}/attendees/{userId}` | Get specific attendee |
-| DELETE | `/api/events/{eventId}/attendees/{userId}` | Deregister from event |
+---
 
-### QR Code & Attendance Endpoints
+## 🔄 CI/CD Workflow
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/events/{eventId}/qr` | Generate/retrieve QR code |
-| POST | `/api/events/scan` | Mark attendance via QR scan |
+### Overview
 
-## Integration with Other Services
+1. **Build and Test**
 
-This service integrates with:
-- **Gateway Service**: Receives authenticated user information via headers (`X-User-ID`, `X-User-Email`, `X-User-Role`)
-- **User Service**: Validates user existence during registration
-- **Gamification Service**: Triggers coin rewards when attendance is marked
+   * JDK 21 setup, Maven caching
+   * Compile and run unit tests
+   * Upload test and coverage reports
 
-## Technology Stack
+2. **Code Quality**
 
-- **Framework**: Spring Boot 3.5.6
-- **Java Version**: 21
-- **Build Tool**: Maven 3.9+
-- **Database**: PostgreSQL (via Supabase)
-- **ORM**: Hibernate/JPA
-- **QR Code Generation**: ZXing 3.5.3
-- **Testing**: JUnit 5, Mockito, AssertJ
-- **Code Coverage**: Jacoco 0.8.12
-- **API Documentation**: SpringDoc OpenAPI 2.7.0
-- **Code Quality**: SpotBugs 4.8.6, Checkstyle 3.2.2
+   * Runs **Checkstyle** and **SpotBugs**
+   * Performs **SonarCloud** analysis on `main` branch
 
-## Static Analysis
+3. **Docker Build**
+
+   * Builds Docker image `greenloop-event-service:test`
+   * Performs health check with `curl`
+   * Pushes image on `main` branch
+
+4. **Security Scans**
+
+   * Uses **Trivy** and **OWASP Dependency Check**
+   * Uploads scan reports as artifacts
+
+---
+
+## 🧱 Tech Stack
+
+* **Java 21**
+* **Spring Boot 3.5.6**
+* **Spring Data JPA**
+* **Supabase (PostgreSQL)**
+* **ZXing (QR Code)**
+* **Docker-ready**
+* **Maven**
+* **JaCoCo**, **Checkstyle**, **SpotBugs**, **SonarCloud**
+
+---
+
+## ⚙️ Static Analysis
+
+### SpotBugs
 
 ```bash
-# Run SpotBugs analysis
-mvn spotbugs:check
-
-# Run Checkstyle (Google Java Style)
-mvn checkstyle:check
-
-# Generate Javadoc
-mvn javadoc:javadoc
-# View: target/site/apidocs/index.html
+./mvnw spotbugs:gui
+./mvnw clean compile spotbugs:check
 ```
 
-## Database Schema
+### Checkstyle
 
-The service uses schema `event_service` with tables:
-- `events`: Event details (name, capacity, dates, QR tokens, etc.)
-- `event_attendees`: Attendee registrations and attendance records
+```bash
+./mvnw checkstyle:check
+```
 
-Key relationships:
-- One-to-Many: Event → EventAttendees
-- Cascade operations maintain referential integrity
+### Javadoc & Coverage
 
-## Architecture Notes
+```bash
+./mvnw javadoc:javadoc
+open target/site/apidocs/index.html
 
-- **Service Layer Design**: EventService contains both command (create/update/delete) and query (get/list/analytics) operations
-  - Previously split into EventService and EventQueryService, now merged for simpler API structure
-  - Maintains separation of concerns at the repository layer
-- **QR Code Strategy**: Unique tokens generated per event, refreshable by admins
-- **Attendance Workflow**: Register → Event goes ONGOING → Scan QR → Attendance marked → Coins awarded
-- **Connection Pooling**: HikariCP optimized for Supabase free-tier limits (max 2 connections)
+./mvnw clean test jacoco:report
+open target/site/jacoco/index.html
+```
 
-## Contributing
+---
 
-1. Follow Google Java Style Guide
-2. Add unit tests for new features
-3. Ensure Jacoco coverage remains above 80%
-4. Run `mvn clean verify` before committing
-5. Add comprehensive Javadoc for public methods
+## 📊 Monitoring
 
-## License
+**Health Checks**
 
-© 2024 GreenLoop Team. All rights reserved.
-" 
+```bash
+curl http://localhost:8083/actuator/health
+curl http://localhost:8083/actuator/info
+```
+
+**Dockerfile Health Check**
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8083/actuator/health || exit 1
+```
+
+---
+
+## 🧠 Best Practices
+
+* ✅ Javadoc for all public methods
+* ✅ Consistent DTO and entity mapping
+* ✅ Centralized exception handling
+* ✅ Input validation & null checks
+* ✅ Security-first design
+* ✅ Code style via Checkstyle
+
+---
+
+## 👥 Contributing
+
+1. Add Javadoc for new classes/methods
+2. Write or update unit tests
+3. Update README for new features
+4. Follow the existing coding style
+5. Maintain >80% test coverage
+
+---
+
+**GreenLoop Event Service** | Version 1.0 | Java 21 | Spring Boot 3.5.6
