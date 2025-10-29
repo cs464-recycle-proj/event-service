@@ -39,7 +39,7 @@ http://localhost:8083/swagger-ui.html
 
 The project includes **unit and integration tests** with coverage reports generated using **JaCoCo**.
 
-* **Current coverage:** 92%
+* **Current coverage:** 89%
 
 ![Test Coverage](docs/coverage.png)
 

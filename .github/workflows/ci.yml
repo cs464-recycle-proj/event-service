@@ -80,16 +80,15 @@ jobs:
         run: ./mvnw spotbugs:spotbugs || true
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=cs464-recycle-proj_event-service
+            -Dsonar.projectKey=cs464-recycle-proj_auth-service
             -Dsonar.organization=greenloop
             -Dsonar.host.url=https://sonarcloud.io
-        continue-on-error: true
 
   build-docker:
     name: Build and Push Docker Image
