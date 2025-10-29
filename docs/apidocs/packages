@@ -1,0 +1,9 @@
+com.greenloop.event_service.configs
+com.greenloop.event_service.controllers
+com.greenloop.event_service.dtos
+com.greenloop.event_service.enums
+com.greenloop.event_service
+com.greenloop.event_service.exceptions
+com.greenloop.event_service.models
+com.greenloop.event_service.repos
+com.greenloop.event_service.services

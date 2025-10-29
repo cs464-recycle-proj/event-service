@@ -67,6 +67,31 @@ class EventAttendeeServiceTest {
     }
 
     @Test
+    void getEventAttendeeById_Success() {
+        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                .thenReturn(Optional.of(testAttendee));
+
+        EventAttendeeResponse response = eventAttendeeService.getEventAttendeeById(eventId, userId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getUserId()).isEqualTo(userId);
+        assertThat(response.getUserEmail()).isEqualTo(userEmail);
+        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+    }
+
+    @Test
+    void getEventAttendeeById_NotRegistered_ThrowsException() {
+        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> eventAttendeeService.getEventAttendeeById(eventId, userId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Attendee did not sign up for this event");
+
+        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+    }
+
+    @Test
     void registerAttendee_Success() {
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
         when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);

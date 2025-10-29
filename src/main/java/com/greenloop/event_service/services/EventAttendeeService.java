@@ -24,6 +24,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service layer for managing event attendee operations.
+ * <p>
+ * Handles attendee registration, deregistration, attendance tracking via QR
+ * codes,
+ * and attendee status queries. All operations are transactional to ensure data
+ * consistency.
+ * </p>
+ * 
+ * @author GreenLoop Team
+ * @version 1.0
+ */
 @Service
 @Transactional
 @AllArgsConstructor
@@ -32,6 +44,22 @@ public class EventAttendeeService {
     private final EventRepository eventRepository;
     private final EventAttendeeRepository attendeeRepository;
 
+    /**
+     * Registers a user as an attendee for an event.
+     * <p>
+     * Validates that the user is not already registered and that the event has
+     * available capacity.
+     * </p>
+     *
+     * @param eventId   the UUID of the event
+     * @param userid    the UUID of the user to register
+     * @param userEmail the email of the user to register
+     * @return EventAttendeeResponse containing the registration details
+     * @throws EventNotFoundException     if the event does not exist
+     * @throws AlreadyRegisteredException if the user is already registered for this
+     *                                    event
+     * @throws EventFullException         if the event is at full capacity
+     */
     public EventAttendeeResponse registerAttendee(UUID eventId, UUID userid, String userEmail) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
@@ -55,6 +83,13 @@ public class EventAttendeeService {
         return mapToResponse(newAttendee);
     }
 
+    /**
+     * Retrieves all attendees registered for a specific event.
+     *
+     * @param eventId the UUID of the event
+     * @return list of all attendees for the event
+     * @throws EventNotFoundException if the event does not exist
+     */
     public List<EventAttendeeResponse> getAllEventAttendees(UUID eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
@@ -64,16 +99,54 @@ public class EventAttendeeService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Checks if a user is registered for a specific event.
+     *
+     * @param eventId the UUID of the event
+     * @param userId  the UUID of the user
+     * @return true if user is registered, false otherwise
+     */
     public boolean isUserRegistered(UUID eventId, UUID userId) {
         return attendeeRepository.existsByUserIdAndEventId(userId, eventId);
     }
 
+    /**
+     * Deregisters a user from an event.
+     *
+     * @param eventId the UUID of the event
+     * @param userId  the UUID of the user to deregister
+     * @throws ResourceNotFoundException if the attendee record does not exist
+     */
     public void deregisterAttendee(UUID eventId, UUID userId) {
         EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendee with id " + userId + " is not found"));
         attendeeRepository.delete(attendee);
     }
 
+    /**
+     * Marks a user's attendance at an event using a QR code token.
+     * <p>
+     * Validates that:
+     * <ul>
+     * <li>The event is in ONGOING status</li>
+     * <li>The user is registered for the event</li>
+     * <li>The user has not already marked attendance</li>
+     * </ul>
+     * </p>
+     *
+     * @param req       the scan request containing the QR token
+     * @param userId    the UUID of the user marking attendance
+     * @param userEmail the email of the user marking attendance
+     * @return EventAttendeeResponse with updated attendance details
+     * @throws ResourceNotFoundException        if the event or attendee record is
+     *                                          not found
+     * @throws InvalidEventStateException       if the event is not in ONGOING
+     *                                          status
+     * @throws AttendeeNotRegisteredException   if the user did not register for the
+     *                                          event
+     * @throws AttendanceAlreadyMarkedException if the user already marked
+     *                                          attendance
+     */
     public EventAttendeeResponse markAttendanceByToken(ScanRequest req, UUID userId, String userEmail) {
         Event event = eventRepository.findByQrToken(req.getQrToken())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found for provided QR token"));
@@ -96,12 +169,26 @@ public class EventAttendeeService {
         return mapToResponse(attendeeRepository.save(attendee));
     }
 
+    /**
+     * Retrieves a specific attendee record for an event.
+     *
+     * @param eventId the UUID of the event
+     * @param userId  the UUID of the user/attendee
+     * @return EventAttendeeResponse containing the attendee details
+     * @throws ResourceNotFoundException if the attendee record does not exist
+     */
     public EventAttendeeResponse getEventAttendeeById(UUID eventId, UUID userId) {
         EventAttendee attendee = attendeeRepository.findByUserIdAndEventId(userId, eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendee did not sign up for this event"));
         return mapToResponse(attendee);
     }
 
+    /**
+     * Maps an EventAttendee entity to an EventAttendeeResponse DTO.
+     *
+     * @param attendee the EventAttendee entity to map
+     * @return EventAttendeeResponse DTO
+     */
     private EventAttendeeResponse mapToResponse(EventAttendee attendee) {
         return EventAttendeeResponse.builder()
                 .id(attendee.getId())

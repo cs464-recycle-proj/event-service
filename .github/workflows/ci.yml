@@ -1,68 +1,211 @@
-name: CI - Event Service
+name: Event Service CI
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - '**'
+    branches: [main]
   pull_request:
-    branches: [ main ]
-    paths:
-      - '**'
+    branches: [main]
 
 jobs:
-  build:
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: maven
-      - run: chmod +x mvnw
-      - run: ./mvnw clean package -DskipTests
 
-  static-analysis:
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: maven
-      - run: chmod +x mvnw
-      - run: ./mvnw spotbugs:spotbugs
-      - run: ./mvnw spotbugs:check
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: spotbugs-report-event
-          path: target/spotbugs/spotbugsXml.xml
-      - run: ./mvnw checkstyle:checkstyle
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: checkstyle-report-event
-          path: target/site/checkstyle.html
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
           cache: maven
-      - run: chmod +x mvnw
-      - run: ./mvnw test -Dspring.profiles.active=test
-      - uses: actions/upload-artifact@v4
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+      
+      - name: Cache Maven packages
+        uses: actions/cache@v4
         with:
-          name: test-results-event
-          path: target/surefire-reports
-          
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build with Maven
+        run: ./mvnw clean compile -B
+
+      - name: Run tests
+        run: ./mvnw test -B -Dspring.profiles.active=test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: event-service-test-reports
+          path: target/surefire-reports/
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+      
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Run Checkstyle
+        run: ./mvnw checkstyle:checkstyle || true
+
+      - name: Run SpotBugs
+        run: ./mvnw spotbugs:spotbugs || true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=cs464-recycle-proj_event-service
+            -Dsonar.organization=greenloop
+            -Dsonar.host.url=https://sonarcloud.io
+        continue-on-error: true
+
+  build-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/greenloop-event-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/greenloop-event-service:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Save Docker image as an artifact
+        run: docker save ${{ secrets.DOCKER_USERNAME }}/greenloop-event-service:test -o event-service-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-test
+          path: event-service-image.tar
+          retention-days: 1
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: build-docker
+    if: github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-test
+
+      - name: Load Docker image
+        run: docker load -i event-service-image.tar
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ secrets.DOCKER_USERNAME }}/greenloop-event-service:test"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() 
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "event-service"
+          path: "."
+          format: "HTML"
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+        continue-on-error: true 
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: reports/
+          if-no-files-found: ignore 
