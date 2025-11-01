@@ -4,6 +4,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -20,6 +21,9 @@ public class RabbitMQConfig {
 
     @Value("${rabbitmq.exchange.gamification}")
     private String gamificationExchange;
+
+    @Value("${rabbitmq.exchange.notification:notifications.topic}")
+    private String notificationExchange;
 
     /**
      * Creates the queue for event participation messages
@@ -45,6 +49,16 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(eventParticipationQueue)
                 .to(gamificationExchange)
                 .with("event.participation");
+    }
+
+    /**
+     * Creates the topic exchange for notification messages
+     * This exchange is used by NotificationPublisher to send emails
+     * Queue bindings are managed by the notification service
+     */
+    @Bean
+    public TopicExchange notificationExchange() {
+        return new TopicExchange(notificationExchange, true, false); // durable, not auto-delete
     }
 
     /**

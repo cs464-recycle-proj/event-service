@@ -36,8 +36,6 @@ import java.util.stream.Collectors;
  * @author GreenLoop Team
  * @version 1.0
  */
-import com.ticketsystem.event.service.services.NotificationPublisher;
-
 @Service
 @Transactional
 @AllArgsConstructor
