@@ -47,7 +47,7 @@ public class EventAttendeeService {
     private final NotificationPublisher notificationPublisher;
 
     /**
-     * Registers a user as an attendee for an event.
+     * Registers a user as an attendee for an event
      * <p>
      * Validates that the user is not already registered and that the event has
      * available capacity.
