@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  * @author GreenLoop Team
  * @version 1.0
  */
+import com.ticketsystem.event.service.services.NotificationPublisher;
+
 @Service
 @Transactional
 @AllArgsConstructor
@@ -43,6 +45,8 @@ public class EventAttendeeService {
 
     private final EventRepository eventRepository;
     private final EventAttendeeRepository attendeeRepository;
+    private final EventMessagePublisher messagePublisher;
+    private final NotificationPublisher notificationPublisher;
 
     /**
      * Registers a user as an attendee for an event.
@@ -63,7 +67,7 @@ public class EventAttendeeService {
     public EventAttendeeResponse registerAttendee(UUID eventId, UUID userid, String userEmail) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException("Event with id " + eventId + " is not found"));
-
+    
         if (attendeeRepository.existsByUserIdAndEventId(userid, eventId)) {
             throw new AlreadyRegisteredException("User already registered for this event");
         }
@@ -79,6 +83,9 @@ public class EventAttendeeService {
                 .build();
 
         event.addAttendeeToEvent(newAttendee);
+        
+        // Send event confirmation email to the attendee
+        notificationPublisher.publishEventConfirmation(userEmail, event);
 
         return mapToResponse(newAttendee);
     }
@@ -166,7 +173,16 @@ public class EventAttendeeService {
 
         attendee.setAttended(true);
         attendee.setAttendedAt(LocalDateTime.now());
-        return mapToResponse(attendeeRepository.save(attendee));
+        EventAttendee savedAttendee = attendeeRepository.save(attendee);
+        
+        // Publish event participation message to gamification service
+        // User earns coins from the event
+        messagePublisher.publishEventParticipation(event, userId, event.getCoins());
+        
+        // Send attendance confirmation email
+        notificationPublisher.publishEventAttendance(userEmail, event.getName(), event.getCoins());
+        
+        return mapToResponse(savedAttendee);
     }
 
     /**
