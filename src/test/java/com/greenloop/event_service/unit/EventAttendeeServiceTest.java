@@ -9,6 +9,8 @@ import com.greenloop.event_service.models.EventAttendee;
 import com.greenloop.event_service.repos.EventAttendeeRepository;
 import com.greenloop.event_service.repos.EventRepository;
 import com.greenloop.event_service.services.EventAttendeeService;
+import com.greenloop.event_service.services.EventMessagePublisher;
+import com.ticketsystem.event.service.services.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,288 +28,294 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EventAttendeeServiceTest {
 
-    @Mock
-    private EventRepository eventRepository;
+        @Mock
+        private EventRepository eventRepository;
 
-    @Mock
-    private EventAttendeeRepository attendeeRepository;
+        @Mock
+        private EventAttendeeRepository attendeeRepository;
 
-    @InjectMocks
-    private EventAttendeeService eventAttendeeService;
+        @Mock
+        private EventMessagePublisher messagePublisher;
 
-    private Event testEvent;
-    private EventAttendee testAttendee;
-    private UUID eventId;
-    private UUID userId;
-    private String userEmail;
+        @Mock
+        private NotificationPublisher notificationPublisher;
 
-    @BeforeEach
-    void setUp() {
-        eventId = UUID.randomUUID();
-        userId = UUID.randomUUID();
-        userEmail = "test@example.com";
+        @InjectMocks
+        private EventAttendeeService eventAttendeeService;
 
-        testEvent = Event.builder()
-                .id(eventId)
-                .name("Test Event")
-                .capacity(100)
-                .status(EventStatus.REGISTRATION)
-                .qrToken("test-qr-token")
-                .attendees(new ArrayList<>())
-                .build();
+        private Event testEvent;
+        private EventAttendee testAttendee;
+        private UUID eventId;
+        private UUID userId;
+        private String userEmail;
 
-        testAttendee = EventAttendee.builder()
-                .id(UUID.randomUUID())
-                .userId(userId)
-                .userEmail(userEmail)
-                .event(testEvent)
-                .registeredAt(LocalDateTime.now())
-                .attended(false)
-                .build();
-    }
+        @BeforeEach
+        void setUp() {
+                eventId = UUID.randomUUID();
+                userId = UUID.randomUUID();
+                userEmail = "test@example.com";
 
-    @Test
-    void getEventAttendeeById_Success() {
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.of(testAttendee));
+                testEvent = Event.builder()
+                                .id(eventId)
+                                .name("Test Event")
+                                .capacity(100)
+                                .status(EventStatus.REGISTRATION)
+                                .qrToken("test-qr-token")
+                                .attendees(new ArrayList<>())
+                                .build();
 
-        EventAttendeeResponse response = eventAttendeeService.getEventAttendeeById(eventId, userId);
+                testAttendee = EventAttendee.builder()
+                                .id(UUID.randomUUID())
+                                .userId(userId)
+                                .userEmail(userEmail)
+                                .event(testEvent)
+                                .registeredAt(LocalDateTime.now())
+                                .attended(false)
+                                .build();
+        }
 
-        assertThat(response).isNotNull();
-        assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUserEmail()).isEqualTo(userEmail);
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void getEventAttendeeById_Success() {
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.of(testAttendee));
 
-    @Test
-    void getEventAttendeeById_NotRegistered_ThrowsException() {
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.empty());
+                EventAttendeeResponse response = eventAttendeeService.getEventAttendeeById(eventId, userId);
 
-        assertThatThrownBy(() -> eventAttendeeService.getEventAttendeeById(eventId, userId))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Attendee did not sign up for this event");
+                assertThat(response).isNotNull();
+                assertThat(response.getUserId()).isEqualTo(userId);
+                assertThat(response.getUserEmail()).isEqualTo(userEmail);
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+        }
 
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void getEventAttendeeById_NotRegistered_ThrowsException() {
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.empty());
 
-    @Test
-    void registerAttendee_Success() {
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
+                assertThatThrownBy(() -> eventAttendeeService.getEventAttendeeById(eventId, userId))
+                                .isInstanceOf(ResourceNotFoundException.class)
+                                .hasMessageContaining("Attendee did not sign up for this event");
 
-        EventAttendeeResponse response = eventAttendeeService.registerAttendee(eventId, userId, userEmail);
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+        }
 
-        assertThat(response).isNotNull();
-        assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUserEmail()).isEqualTo(userEmail);
-        assertThat(response.isAttended()).isFalse();
-        verify(eventRepository).findById(eventId);
-        verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void registerAttendee_Success() {
+                when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
 
-    @Test
-    void registerAttendee_EventNotFound_ThrowsException() {
-        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+                EventAttendeeResponse response = eventAttendeeService.registerAttendee(eventId, userId, userEmail);
 
-        assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
-                .isInstanceOf(EventNotFoundException.class)
-                .hasMessageContaining("Event with id " + eventId + " is not found");
+                assertThat(response).isNotNull();
+                assertThat(response.getUserId()).isEqualTo(userId);
+                assertThat(response.getUserEmail()).isEqualTo(userEmail);
+                assertThat(response.isAttended()).isFalse();
+                verify(eventRepository).findById(eventId);
+                verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
+        }
 
-        verify(eventRepository).findById(eventId);
-        verify(attendeeRepository, never()).existsByUserIdAndEventId(any(), any());
-    }
+        @Test
+        void registerAttendee_EventNotFound_ThrowsException() {
+                when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
-    @Test
-    void registerAttendee_AlreadyRegistered_ThrowsException() {
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(true);
+                assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
+                                .isInstanceOf(EventNotFoundException.class)
+                                .hasMessageContaining("Event with id " + eventId + " is not found");
 
-        assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
-                .isInstanceOf(AlreadyRegisteredException.class)
-                .hasMessageContaining("User already registered for this event");
+                verify(eventRepository).findById(eventId);
+                verify(attendeeRepository, never()).existsByUserIdAndEventId(any(), any());
+        }
 
-        verify(eventRepository).findById(eventId);
-        verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void registerAttendee_AlreadyRegistered_ThrowsException() {
+                when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(true);
 
-    @Test
-    void registerAttendee_EventFull_ThrowsException() {
-        testEvent.setCapacity(1);
-        testEvent.getAttendees().add(EventAttendee.builder().id(UUID.randomUUID()).build());
+                assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
+                                .isInstanceOf(AlreadyRegisteredException.class)
+                                .hasMessageContaining("User already registered for this event");
 
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
+                verify(eventRepository).findById(eventId);
+                verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
+        }
 
-        assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
-                .isInstanceOf(EventFullException.class)
-                .hasMessageContaining("Event with id " + eventId + " is full");
+        @Test
+        void registerAttendee_EventFull_ThrowsException() {
+                testEvent.setCapacity(1);
+                testEvent.getAttendees().add(EventAttendee.builder().id(UUID.randomUUID()).build());
 
-        verify(eventRepository).findById(eventId);
-        verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
-    }
+                when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
 
-    @Test
-    void getAllEventAttendees_Success() {
-        testEvent.getAttendees().add(testAttendee);
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+                assertThatThrownBy(() -> eventAttendeeService.registerAttendee(eventId, userId, userEmail))
+                                .isInstanceOf(EventFullException.class)
+                                .hasMessageContaining("Event with id " + eventId + " is full");
 
-        List<EventAttendeeResponse> responses = eventAttendeeService.getAllEventAttendees(eventId);
+                verify(eventRepository).findById(eventId);
+                verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
+        }
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getUserId()).isEqualTo(userId);
-        assertThat(responses.get(0).getUserEmail()).isEqualTo(userEmail);
-        verify(eventRepository).findById(eventId);
-    }
+        @Test
+        void getAllEventAttendees_Success() {
+                testEvent.getAttendees().add(testAttendee);
+                when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
 
-    @Test
-    void getAllEventAttendees_EventNotFound_ThrowsException() {
-        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+                List<EventAttendeeResponse> responses = eventAttendeeService.getAllEventAttendees(eventId);
 
-        assertThatThrownBy(() -> eventAttendeeService.getAllEventAttendees(eventId))
-                .isInstanceOf(EventNotFoundException.class)
-                .hasMessageContaining("Event with id " + eventId + " is not found");
+                assertThat(responses).hasSize(1);
+                assertThat(responses.get(0).getUserId()).isEqualTo(userId);
+                assertThat(responses.get(0).getUserEmail()).isEqualTo(userEmail);
+                verify(eventRepository).findById(eventId);
+        }
 
-        verify(eventRepository).findById(eventId);
-    }
+        @Test
+        void getAllEventAttendees_EventNotFound_ThrowsException() {
+                when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
-    @Test
-    void isUserRegistered_ReturnsTrue() {
-        when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(true);
+                assertThatThrownBy(() -> eventAttendeeService.getAllEventAttendees(eventId))
+                                .isInstanceOf(EventNotFoundException.class)
+                                .hasMessageContaining("Event with id " + eventId + " is not found");
 
-        boolean result = eventAttendeeService.isUserRegistered(eventId, userId);
+                verify(eventRepository).findById(eventId);
+        }
 
-        assertThat(result).isTrue();
-        verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void isUserRegistered_ReturnsTrue() {
+                when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(true);
 
-    @Test
-    void isUserRegistered_ReturnsFalse() {
-        when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
+                boolean result = eventAttendeeService.isUserRegistered(eventId, userId);
 
-        boolean result = eventAttendeeService.isUserRegistered(eventId, userId);
+                assertThat(result).isTrue();
+                verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
+        }
 
-        assertThat(result).isFalse();
-        verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
-    }
+        @Test
+        void isUserRegistered_ReturnsFalse() {
+                when(attendeeRepository.existsByUserIdAndEventId(userId, eventId)).thenReturn(false);
 
-    @Test
-    void deregisterAttendee_Success() {
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.of(testAttendee));
+                boolean result = eventAttendeeService.isUserRegistered(eventId, userId);
 
-        eventAttendeeService.deregisterAttendee(eventId, userId);
+                assertThat(result).isFalse();
+                verify(attendeeRepository).existsByUserIdAndEventId(userId, eventId);
+        }
 
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-        verify(attendeeRepository).delete(testAttendee);
-    }
+        @Test
+        void deregisterAttendee_Success() {
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.of(testAttendee));
 
-    @Test
-    void deregisterAttendee_AttendeeNotFound_ThrowsException() {
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.empty());
+                eventAttendeeService.deregisterAttendee(eventId, userId);
 
-        assertThatThrownBy(() -> eventAttendeeService.deregisterAttendee(eventId, userId))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Attendee with id " + userId + " is not found");
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+                verify(attendeeRepository).delete(testAttendee);
+        }
 
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-        verify(attendeeRepository, never()).delete(any());
-    }
+        @Test
+        void deregisterAttendee_AttendeeNotFound_ThrowsException() {
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.empty());
 
-    @Test
-    void markAttendanceByToken_Success() {
-        testEvent.setStatus(EventStatus.ONGOING);
-        ScanRequest scanRequest = new ScanRequest();
-        scanRequest.setQrToken("test-qr-token");
+                assertThatThrownBy(() -> eventAttendeeService.deregisterAttendee(eventId, userId))
+                                .isInstanceOf(ResourceNotFoundException.class)
+                                .hasMessageContaining("Attendee with id " + userId + " is not found");
 
-        when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.of(testAttendee));
-        when(attendeeRepository.save(any(EventAttendee.class))).thenReturn(testAttendee);
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+                verify(attendeeRepository, never()).delete(any());
+        }
 
-        EventAttendeeResponse response = eventAttendeeService.markAttendanceByToken(
-                scanRequest, userId, userEmail);
+        @Test
+        void markAttendanceByToken_Success() {
+                testEvent.setStatus(EventStatus.ONGOING);
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.setQrToken("test-qr-token");
 
-        assertThat(response).isNotNull();
-        assertThat(testAttendee.isAttended()).isTrue();
-        assertThat(testAttendee.getAttendedAt()).isNotNull();
-        verify(eventRepository).findByQrToken("test-qr-token");
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-        verify(attendeeRepository).save(testAttendee);
-    }
+                when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.of(testAttendee));
+                when(attendeeRepository.save(any(EventAttendee.class))).thenReturn(testAttendee);
 
-    @Test
-    void markAttendanceByToken_EventNotFound_ThrowsException() {
-        ScanRequest scanRequest = new ScanRequest();
-        scanRequest.setQrToken("invalid-token");
+                EventAttendeeResponse response = eventAttendeeService.markAttendanceByToken(
+                                scanRequest, userId, userEmail);
 
-        when(eventRepository.findByQrToken("invalid-token")).thenReturn(Optional.empty());
+                assertThat(response).isNotNull();
+                assertThat(testAttendee.isAttended()).isTrue();
+                assertThat(testAttendee.getAttendedAt()).isNotNull();
+                verify(eventRepository).findByQrToken("test-qr-token");
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+                verify(attendeeRepository).save(testAttendee);
+        }
 
-        assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
-                scanRequest, userId, userEmail))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Event not found for provided QR token");
+        @Test
+        void markAttendanceByToken_EventNotFound_ThrowsException() {
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.setQrToken("invalid-token");
 
-        verify(eventRepository).findByQrToken("invalid-token");
-        verify(attendeeRepository, never()).findByUserIdAndEventId(any(), any());
-    }
+                when(eventRepository.findByQrToken("invalid-token")).thenReturn(Optional.empty());
 
-    @Test
-    void markAttendanceByToken_EventNotOngoing_ThrowsException() {
-        testEvent.setStatus(EventStatus.REGISTRATION);
-        ScanRequest scanRequest = new ScanRequest();
-        scanRequest.setQrToken("test-qr-token");
+                assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
+                                scanRequest, userId, userEmail))
+                                .isInstanceOf(ResourceNotFoundException.class)
+                                .hasMessageContaining("Event not found for provided QR token");
 
-        when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
+                verify(eventRepository).findByQrToken("invalid-token");
+                verify(attendeeRepository, never()).findByUserIdAndEventId(any(), any());
+        }
 
-        assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
-                scanRequest, userId, userEmail))
-                .isInstanceOf(InvalidEventStateException.class)
-                .hasMessageContaining("Attendance can only be marked for ongoing events");
+        @Test
+        void markAttendanceByToken_EventNotOngoing_ThrowsException() {
+                testEvent.setStatus(EventStatus.REGISTRATION);
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.setQrToken("test-qr-token");
 
-        verify(eventRepository).findByQrToken("test-qr-token");
-        verify(attendeeRepository, never()).findByUserIdAndEventId(any(), any());
-    }
+                when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
 
-    @Test
-    void markAttendanceByToken_AttendeeNotRegistered_ThrowsException() {
-        testEvent.setStatus(EventStatus.ONGOING);
-        ScanRequest scanRequest = new ScanRequest();
-        scanRequest.setQrToken("test-qr-token");
+                assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
+                                scanRequest, userId, userEmail))
+                                .isInstanceOf(InvalidEventStateException.class)
+                                .hasMessageContaining("Attendance can only be marked for ongoing events");
 
-        when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.empty());
+                verify(eventRepository).findByQrToken("test-qr-token");
+                verify(attendeeRepository, never()).findByUserIdAndEventId(any(), any());
+        }
 
-        assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
-                scanRequest, userId, userEmail))
-                .isInstanceOf(AttendeeNotRegisteredException.class)
-                .hasMessageContaining("User with ID " + userId + " did not register for this event");
+        @Test
+        void markAttendanceByToken_AttendeeNotRegistered_ThrowsException() {
+                testEvent.setStatus(EventStatus.ONGOING);
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.setQrToken("test-qr-token");
 
-        verify(eventRepository).findByQrToken("test-qr-token");
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-    }
+                when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.empty());
 
-    @Test
-    void markAttendanceByToken_AlreadyMarked_ThrowsException() {
-        testEvent.setStatus(EventStatus.ONGOING);
-        testAttendee.setAttended(true);
-        testAttendee.setAttendedAt(LocalDateTime.now());
-        ScanRequest scanRequest = new ScanRequest();
-        scanRequest.setQrToken("test-qr-token");
+                assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
+                                scanRequest, userId, userEmail))
+                                .isInstanceOf(AttendeeNotRegisteredException.class)
+                                .hasMessageContaining("User with ID " + userId + " did not register for this event");
 
-        when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
-        when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
-                .thenReturn(Optional.of(testAttendee));
+                verify(eventRepository).findByQrToken("test-qr-token");
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+        }
 
-        assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
-                scanRequest, userId, userEmail))
-                .isInstanceOf(AttendanceAlreadyMarkedException.class)
-                .hasMessageContaining("User with ID " + userId + " has already marked attendance");
+        @Test
+        void markAttendanceByToken_AlreadyMarked_ThrowsException() {
+                testEvent.setStatus(EventStatus.ONGOING);
+                testAttendee.setAttended(true);
+                testAttendee.setAttendedAt(LocalDateTime.now());
+                ScanRequest scanRequest = new ScanRequest();
+                scanRequest.setQrToken("test-qr-token");
 
-        verify(eventRepository).findByQrToken("test-qr-token");
-        verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
-        verify(attendeeRepository, never()).save(any());
-    }
+                when(eventRepository.findByQrToken("test-qr-token")).thenReturn(Optional.of(testEvent));
+                when(attendeeRepository.findByUserIdAndEventId(userId, eventId))
+                                .thenReturn(Optional.of(testAttendee));
+
+                assertThatThrownBy(() -> eventAttendeeService.markAttendanceByToken(
+                                scanRequest, userId, userEmail))
+                                .isInstanceOf(AttendanceAlreadyMarkedException.class)
+                                .hasMessageContaining("User with ID " + userId + " has already marked attendance");
+
+                verify(eventRepository).findByQrToken("test-qr-token");
+                verify(attendeeRepository).findByUserIdAndEventId(userId, eventId);
+                verify(attendeeRepository, never()).save(any());
+        }
 }
