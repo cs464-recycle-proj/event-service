@@ -70,7 +70,7 @@ public class EventAttendeeService {
             throw new AlreadyRegisteredException("User already registered for this event");
         }
 
-        if (event.getAttendeeCount() >= event.getCapacity()) {
+        if (event.getCapacity() != -1 && event.getAttendeeCount() >= event.getCapacity()) {
             throw new EventFullException("Event with id " + eventId + " is full");
         }
 
