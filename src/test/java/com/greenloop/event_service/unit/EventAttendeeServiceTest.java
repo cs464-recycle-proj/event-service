@@ -10,7 +10,7 @@ import com.greenloop.event_service.repos.EventAttendeeRepository;
 import com.greenloop.event_service.repos.EventRepository;
 import com.greenloop.event_service.services.EventAttendeeService;
 import com.greenloop.event_service.services.EventMessagePublisher;
-import com.ticketsystem.event.service.services.NotificationPublisher;
+import com.greenloop.event_service.services.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
