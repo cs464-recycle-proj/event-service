@@ -1,0 +1,102 @@
+# Event Service Configuration
+replicaCount: 2
+
+image:
+  repository: registry.digitalocean.com/cs464-project/event-service
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets:
+  - name: registry-cs464-project
+
+service:
+  type: ClusterIP
+  port: 8083
+  targetPort: 8083
+
+ingress:
+  enabled: false  # Only internal access via Kubernetes DNS
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Environment Variables
+env:
+  SERVER_PORT: "8083"
+  
+  # Spring Boot / Java Configuration
+  SPRING_PROFILES_ACTIVE: "production"
+  JAVA_OPTS: "-Xms256m -Xmx512m"
+  
+  # Database configuration (Spring Boot style)
+  DATABASE_URL: "jdbc:postgresql://event-service-postgresql:5432/event_db"
+  DATABASE_USERNAME: "event"
+  
+  # Legacy/Direct PostgreSQL environment variables (if needed)
+  DB_HOST: "event-service-postgresql"
+  DB_PORT: "5432"
+  DB_USER: "event"
+  DB_NAME: "event_db"
+  PGHOST: "event-service-postgresql"
+  PGPORT: "5432"
+  PGDATABASE: "event_db"
+  PGUSER: "event"
+  
+  # RabbitMQ configuration (connects to shared RabbitMQ)
+  RABBITMQ_HOST: "rabbitmq.infrastructure.svc.cluster.local"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_VHOST: "/"
+  
+  # Queue Names
+  QUEUE_EVENT_PARTICIPATION: "gamification.event.participation"
+  RABBITMQ_EXCHANGE_GAMIFICATION: "gamification.exchange"
+  
+  # Logging Configuration
+  LOG_LEVEL: "info"
+  
+  # CORS Configuration
+  CORS_ALLOWED_ORIGINS: "*"
+  
+  # Health Check
+  HEALTH_CHECK_PATH: "/actuator/health"
+
+# PostgreSQL Configuration
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: 17.2.0-debian-12-r4
+  auth:
+    username: event
+    password: ""  # Override with secrets in deployment
+    database: event_db
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    initdb:
+      scripts:
+        init.sql: |
+          -- Create event_service schema if it doesn't exist
+          CREATE SCHEMA IF NOT EXISTS event_service;
+          GRANT ALL PRIVILEGES ON SCHEMA event_service TO event;
